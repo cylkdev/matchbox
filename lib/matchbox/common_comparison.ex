@@ -29,6 +29,7 @@ defmodule Matchbox.CommonComparison do
   )a
 
   @general_operators ~w(
+    any
     in
   )a
 
@@ -78,6 +79,9 @@ defmodule Matchbox.CommonComparison do
 
   ### General Operators
 
+  These operators perform specific comparisons between terms:
+
+      - `:any`
       - `:in`
   """
 
@@ -110,7 +114,7 @@ defmodule Matchbox.CommonComparison do
           | :<=
           | :=~
 
-  @type general_operator :: :in
+  @type general_operator :: :any | :in
 
   @type operator :: guard_operator() | comparison_operator() | general_operator()
 
@@ -145,6 +149,7 @@ defmodule Matchbox.CommonComparison do
         :>=,
         :<=,
         :=~,
+        :any,
         :in
       ]
   """
@@ -156,6 +161,9 @@ defmodule Matchbox.CommonComparison do
   Returns `true` if `key` is a recognized operator, otherwise `false`.
 
   #### Examples
+
+      iex> Matchbox.CommonComparison.operator?(:non_existing)
+      false
 
       iex> Matchbox.CommonComparison.operator?(:is_atom)
       true
@@ -223,13 +231,16 @@ defmodule Matchbox.CommonComparison do
       iex> Matchbox.CommonComparison.operator?(:=~)
       true
 
-      iex> Matchbox.CommonComparison.operator?(:in)
+      iex> Matchbox.CommonComparison.operator?(:any)
       true
 
-      iex> Matchbox.CommonComparison.operator?(:non_existing)
-      false
+      iex> Matchbox.CommonComparison.operator?(:in)
+      true
   """
   @spec operator?(key :: atom()) :: true | false
+  def operator?(:any), do: true
+  def operator?(:in), do: true
+
   def operator?(:is_atom), do: true
   def operator?(:is_binary), do: true
   def operator?(:is_boolean), do: true
@@ -255,8 +266,6 @@ defmodule Matchbox.CommonComparison do
   def operator?(:<=), do: true
   def operator?(:=~), do: true
 
-  def operator?(:in), do: true
-
   # fallback
   def operator?(_), do: false
 
@@ -265,6 +274,9 @@ defmodule Matchbox.CommonComparison do
   Returns the result of comparing the `left` term by `operator`.
 
   #### Examples
+
+      iex> Matchbox.CommonComparison.satisfies?("hello", {:=~, ~r|hello|})
+      true
 
       iex> Matchbox.CommonComparison.satisfies?(:matchbox, :is_atom)
       true
@@ -335,13 +347,16 @@ defmodule Matchbox.CommonComparison do
       iex> Matchbox.CommonComparison.satisfies?(1, {:<=, 1})
       true
 
-      iex> Matchbox.CommonComparison.satisfies?(1, {:in, [1, 2, 3]})
+       iex> Matchbox.CommonComparison.satisfies?(1, :any)
       true
 
-      iex> Matchbox.CommonComparison.satisfies?("hello", {:=~, ~r|hello|})
+      iex> Matchbox.CommonComparison.satisfies?(1, {:in, [1, 2, 3]})
       true
   """
   @spec satisfies?(left :: term(), right :: term()) :: true | false
+  def satisfies?(_left, :any), do: true
+  def satisfies?(left, {:in, right}), do: left in right
+
   def satisfies?(term, :is_atom), do: is_atom(term)
   def satisfies?(term, :is_binary), do: is_binary(term)
   def satisfies?(term, :is_boolean), do: is_boolean(term)
@@ -368,8 +383,6 @@ defmodule Matchbox.CommonComparison do
   def satisfies?(left, {:>=, right}), do: left >= right
   def satisfies?(left, {:<=, right}), do: left <= right
   def satisfies?(left, {:=~, right}), do: left =~ right
-
-  def satisfies?(left, {:in, right}), do: left in right
 
   # fallback
   def satisfies?(_, _), do: false

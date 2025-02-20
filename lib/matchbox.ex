@@ -13,7 +13,7 @@ defmodule Matchbox do
   Consider checking the value of a field in a list of maps:
 
   ```elixir
-  iex> Matchbox.compare?([%{message: "hello"}, %{message: "why hello there!"}], %{all: %{message: %{=~: ~r/hello/}}})
+  iex> Matchbox.match_conditions?([%{message: "hello"}, %{message: "why hello there!"}], %{all: %{message: %{=~: ~r/hello/}}})
   true
   ```
 
@@ -82,7 +82,7 @@ defmodule Matchbox do
           opts :: keyword()
         ) :: term()
   def transform(term, conditions, transform_fun, opts \\ []) do
-    if compare?(term, conditions, opts) do
+    if match_conditions?(term, conditions, opts) do
       if is_function(transform_fun, 1) do
         transform_fun.(term)
       else
@@ -113,44 +113,50 @@ defmodule Matchbox do
   ### Examples
 
       # Exact match
-      iex> Matchbox.compare?("hello", %{all: "hello"})
+      iex> Matchbox.match_conditions?("hello", %{all: "hello"})
       true
 
       # Numeric comparison
-      iex> Matchbox.compare?(5, %{all: %{>: 3}})
+      iex> Matchbox.match_conditions?(5, %{all: %{>: 3}})
       true
 
       # List match (any item)
-      iex> Matchbox.compare?([1, 2, 3], %{any: 1})
+      iex> Matchbox.match_conditions?([1, 2, 3], %{any: 1})
       true
 
       # Map match (nested key)
-      iex> Matchbox.compare?(%{body: "hello"}, %{all: %{body: "hello"}})
+      iex> Matchbox.match_conditions?(%{body: "hello"}, %{all: %{body: "hello"}})
       true
   """
-  @spec compare?(
+  @spec match_conditions?(
           term :: term(),
           conditions :: map() | keyword()
         ) :: true | false
-  @spec compare?(
+  @spec match_conditions?(
           term :: term(),
           conditions :: map() | keyword(),
           opts :: keyword()
         ) :: true | false
-  def compare?(term, conditions, opts \\ []) when is_map(conditions) or is_list(conditions) do
-    with true <- Enum.any?(conditions) do
-      Enum.reduce(conditions, true, fn {qual, exprs}, pass? ->
-        pass? and validate_conditions(term, qual, exprs, opts)
-      end)
-    end
+  def match_conditions?(term, conditions, opts \\ []) do
+    Enum.any?(conditions) and validate_conditions(term, conditions, opts)
   end
 
-  defp validate_conditions(term, qual, exprs, opts) do
+  defp validate_conditions(term, conditions, opts) do
+    Enum.all?(conditions, fn {qual, exprs} ->
+      if qual in [:all, :any] do
+        validate_conditional_exprs(term, qual, exprs, opts)
+      else
+        raise "Expected qualifier to be `:all` or `:any`, got: #{inspect(term)}"
+      end
+    end)
+  end
+
+  defp validate_conditional_exprs(term, qual, exprs, opts) do
     cond do
       is_tuple(term) ->
         term
         |> Tuple.to_list()
-        |> validate_conditions(qual, exprs, opts)
+        |> validate_conditional_exprs(qual, exprs, opts)
 
       is_list(term) and Keyword.keyword?(term) ->
         term_match_conditions?(term, qual, exprs, opts)
@@ -175,17 +181,8 @@ defmodule Matchbox do
     end
   end
 
-  defp apply_qualifier(term, :any, fun) do
-    Enum.any?(term, fun)
-  end
-
-  defp apply_qualifier(term, :all, fun) do
-    Enum.all?(term, fun)
-  end
-
-  defp apply_qualifier(term, _, _) do
-    raise ArgumentError, "Expected `:all` or `:any`, got: #{inspect(term)}"
-  end
+  defp apply_qualifier(term, :any, fun), do: Enum.any?(term, fun)
+  defp apply_qualifier(term, :all, fun), do: Enum.all?(term, fun)
 
   defp eval_expr(term, qual, {key, exprs}, opts) when is_list(term) do
     cond do
@@ -199,7 +196,7 @@ defmodule Matchbox do
         end
 
       true ->
-        validate_conditions(term, qual, exprs, opts)
+        validate_conditional_exprs(term, qual, exprs, opts)
     end
   end
 

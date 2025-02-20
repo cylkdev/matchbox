@@ -44,7 +44,13 @@ defmodule Matchbox.ComparisonEngine do
   ## Shared Options
 
     * `comparison_engine` - The module responsible for custom comparisons, such as guard-based checks.
-      Defaults to `Matchbox.CommonComparison`.
+
+        This option is resolved as follows:
+
+        - An attempt is made to get the module from the option `:comparison_engine`.
+        - If the option value is `nil` an attempt is made to get the module from the configuration
+          option `:comparison_engine` (e.g. `config :matchbox, :comparison_engine, YourApp.ComparisonEngine`)
+        - If the configuration option is `nil` it defaults to `Matchbox.CommonComparison`.
   """
 
   @doc """
