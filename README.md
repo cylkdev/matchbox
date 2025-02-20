@@ -1,17 +1,22 @@
 # Matchbox
 
-Matchbox is an Elixir library that provides a flexible
-pattern matching system for structuring and filtering
-data. It simplifies writing expressive and declarative
-pattern-matching logic, making it easier to manipulate
-and query nested data structures.
+Matchbox is an Elixir library that provides flexible and declarative
+pattern matching and transformation for complex data structures. Instead
+of manually structuring nested pattern matches, Matchbox simplifies
+querying and transforming data using a simple API.
 
-**Features**
+The goal of Matchbox is to improve readability, maintainability, and
+reduce boilerplate.
 
-- Flexible pattern matching for complex data structures
-- Lightweight and efficient
-- Supports Elixir’s native pattern matching enhancements
-- Easy-to-use API
+## Features
+
+- **Expressive Pattern Matching** – Match nested structures with ease.
+
+- **Data Transformation** – Transform data structures based on specified patterns.
+
+- **Declarative API** – Simple and readable syntax.
+
+- **Composable** – Works well with existing code.
 
 ## Installation
 
@@ -33,97 +38,65 @@ mix deps.get
 
 ## Usage
 
-To understand the benefits of Matchbox lets look at an example where we want to
-filter specific data from a list by pattern matching against a nested structure,
-one way to solve this in elixir you can do:
+### Pattern Matching in Matchbox
+
+Typically, in Elixir, you would match nested structures manually:
 
 ```elixir
-data = [
-  %{status: :inactive, user: %{id: 1, name: "annie"}},
-  %{status: :active, user: %{id: 2, name: "bart"}},
-  %{status: :active, user: %{id: 3, name: "alice"}}
-]
-
-Enum.filter(data, fn elem ->
-  elem.status === :active and
-  elem.user.id > 1 and
-  elem.user.name =~ ~r/^a(.*)/
-end)
-
-# result
-[%{status: :active, user: %{id: 3, name: "alice"}}]
+case data do
+  %{user: %{age: 30, name: "Alice"}} -> true
+  _ -> false
+end
 ```
 
-This works fine, is simple and easy to read. Things start to get more complex when this
-functionality needs to be shared across other modules or apps which might lead to you
-repeating the same code.
-
-Here’s how you can use Matchbox to do the same thing:
+With Matchbox, you can express the same logic declaratively:
 
 ```elixir
-data = [
-  %{status: :inactive, user: %{id: 1, name: "annie"}},
-  %{status: :active, user: %{id: 2, name: "bart"}},
-  %{status: :active, user: %{id: 3, name: "alice"}}
-]
+data = %{user: %{age: 30, name: "Alice", city: "Vancouver"}}
 
-conditions = %{
-  all: %{
-    status: :active,
-    user: %{
-      id: %{>: 1},
-      name: %{=~: ~r/^a(.*)/}
-    }
-  }
-}
+conditions = %{all: %{user: %{age: 30, name: "Alice"}}}
 
-Enum.filter(data, &Matchbox.match_conditions?(&1, conditions))
-
-# result
-[%{status: :active, user: %{id: 3, name: "alice"}}]
+Matchbox.match_conditions?(data, conditions)
+# => true
 ```
 
-Lets unpack the conditions map for a second and what its saying:
+This approach reduces boilerplate and makes pattern matching easier to manage.
+
+### Transforming Data in Matchbox
+
+Matchbox takes an all-or-nothing approach to data transformation.
+This means that the transformation only applies if the entire
+condition set matches.
+
+In standard Elixir, transforming data often requires deep merging:
 
 ```elixir
-%{
-  all: %{
-    status: :active,
-    user: %{
-      id: %{>: 1},
-      name: %{=~: ~r/^a(.*)/}
-    }
-  }
-}
+Map.merge(data, %{status: "active"})
 ```
 
-- The word `all` acts as a qualifier. this tells matchbox how to evaluate the conditions.
-When the qualifier is all, all expressions in the conditions map must match the term to consider the evaluation true.
-however when the qualifier is `any` then only one expression in the conditions map can match the term
-to consider the evaluation true.
-- The next thing we do is check that the key `status` exists and equals to `:active`
-- We then start searching the nested field `user` and the id must be greater than `1` and the `name` must start with the letter `a`
-
-Matchbox is flexible and supports a query-like language with keywords:
+With Matchbox, you can declaratively apply transformations:
 
 ```elixir
-data = [
-  %{status: :inactive, user: %{id: 1, name: "annie"}},
-  %{status: :active, user: %{id: 2, name: "bart"}},
-  %{status: :active, user: %{id: 3, name: "alice"}}
-]
+data = %{user: %{name: "Alice", age: 30}, status: "inactive"}
 
-conditions = [
-  all: %{status: :active},
-  all: %{user: %{id: %{>: 1}}},
-  all: %{user: %{name: %{=~: ~r/^a(.*)/}}}
-]
+conditions = %{all: %{status: "inactive"}}
 
-Enum.filter(data, &Matchbox.match_conditions?(&1, conditions))
-
-# result
-[%{status: :active, user: %{id: 3, name: "alice"}}]
+Matchbox.transform(data, conditions, fn data -> %{data | status: "active"} end)
+# => %{status: "active", user: %{name: "Alice", age: 30}}
 ```
+
+If the conditions do not match, no transformation is applied:
+
+```elixir
+data = %{user: %{name: "Alice", age: 30}, status: "inactive"}
+
+conditions = %{all: %{name: "Bart"}}
+
+Matchbox.transform(data, conditions, fn data -> %{data | status: "active"} end)
+# => %{user: %{name: "Alice", age: 30}, status: "inactive"}
+```
+
+## Documentation
 
 For full API documentation and more examples, visit: [HexDocs](https://hexdocs.pm/matchbox)
 
@@ -132,6 +105,7 @@ For full API documentation and more examples, visit: [HexDocs](https://hexdocs.p
 The following configuration is available:
 
 ```elixir
+# Use a custom comparison engine instead of the default
 config :matchbox, :comparison_engine, YourApp.ComparisonEngine
 ```
 
@@ -162,6 +136,14 @@ Run tests:
 ```sh
 mix test
 ```
+
+To contribute:
+
+  - **Report Issues:** Open an issue if you find a bug or have a feature request.
+
+  - **Submit Pull Requests:** Fork the repository, create a new branch, make your changes, and submit a pull request.
+
+  - **Code Style:** Follow Elixir's coding conventions and format your code using mix format.
 
 ## License
 
