@@ -347,7 +347,7 @@ defmodule Matchbox.CommonComparison do
       iex> Matchbox.CommonComparison.satisfies?(1, {:<=, 1})
       true
 
-       iex> Matchbox.CommonComparison.satisfies?(1, :any)
+      iex> Matchbox.CommonComparison.satisfies?(1, :any)
       true
 
       iex> Matchbox.CommonComparison.satisfies?(1, {:in, [1, 2, 3]})

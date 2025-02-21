@@ -1,17 +1,17 @@
 # Matchbox
 
-**Matchbox** is an Elixir library that enhances native pattern matching by
-providing a declarative API for complex data structures. It streamlines
-querying and transforming nested data, reducing boilerplate and improving
-code maintainability.
+Matchbox is an Elixir library that enhances native pattern matching in
+Elixir by providing a declarative API for complex data structures. It
+streamlines comparing and transforming nested data, reducing
+boilerplate and improving code maintainability.
 
 ## Features
 
-  - **Flexible Pattern Matching** – Declaratively match nested structures.
+  – Declaratively match nested structures.
 
-  - **Data Transformation** – Modify data based on matching rules.
+  – Modify terms based on pattern matching rules.
 
-  - **Declarative API** – Simple and readable syntax.
+  – Simple and readable syntax.
 
 ## Installation
 
@@ -36,27 +36,27 @@ mix deps.get
 ### Pattern Matching in Elixir vs. Matchbox
 
 Pattern matching in Elixir is powerful, but handling deeply nested structures
-can require multiple conditions, making the code more complex.
+can require multiple conditions, making the code more complex over time.
 
 Consider the following standard Elixir approach:
 
 ```elixir
 case data do
-  %{user: %{age: 30, name: "Alice"}} -> true
+  %{user: %{age: 30, name: "alice"}} -> true
   _ -> false
 end
 ```
 
-Here, we check if the `data` map contains a `user` key with an `age` of `30`
-and a `name` of `"Alice"`. This approach works but becomes harder to manage
-as conditions grow.
+Here, we check if the data map contains a user key with an age of 30 and
+a name of "alice". This approach works but becomes harder to manage as
+conditions grow.
 
 With `Matchbox`, we can express the same logic more declaratively:
 
 ```elixir
-data = %{user: %{age: 30, name: "Alice", city: "Vancouver"}}
+data = %{user: %{age: 30, name: "alice", city: "Vancouver"}}
 
-conditions = %{all: %{user: %{age: 30, name: "Alice"}}}
+conditions = %{all: %{user: %{age: 30, name: "alice"}}}
 
 Matchbox.match_conditions?(data, conditions)
 # => true
@@ -99,7 +99,8 @@ data = [
 conditions = %{
   all: %{
     status: :active,
-    user: %{id: %{">": 1}, name: %{=~: ~r/^a(.*)/}}
+    user: %{id: %{>: 1},
+    name: %{=~: ~r/^a(.*)/}}
   }
 }
 
@@ -108,14 +109,14 @@ Enum.filter(data, &Matchbox.match_conditions?(&1, conditions))
 ```
 
 This is significantly more readable than manually iterating and filtering
-within a standard Enum.filter/2 function.
+within a standard `Enum.filter/2` function.
 
 ### Transforming Data in Matchbox
 
 Modifying deeply nested structures in Elixir often requires using functions
 like `Map.merge/2` or recursive updates.
 
-Consider the standard approach:
+Consider the following approach:
 
 ```elixir
 Map.merge(data, %{status: "active"})
@@ -126,76 +127,87 @@ structures. Matchbox provides a cleaner way to apply transformations
 only when all conditions match:
 
 ```elixir
-data = %{user: %{name: "Alice", age: 30}, status: "inactive"}
+data = %{user: %{name: "alice", age: 30}, status: "inactive"}
 
 conditions = %{all: %{status: "inactive"}}
 
 Matchbox.transform(data, conditions, fn data -> %{data | status: "active"} end)
-# => %{status: "active", user: %{name: "Alice", age: 30}}
+# => %{status: "active", user: %{name: "alice", age: 30}}
 ```
 
 If no match occurs, the data remains unchanged:
 
 ```elixir
-data = %{user: %{name: "Alice", age: 30}, status: "inactive"}
+data = %{user: %{name: "alice", age: 30}, status: "inactive"}
 
-conditions = %{all: %{name: "Bart"}}
+conditions = %{all: %{name: "bart"}}
 
 Matchbox.transform(data, conditions, fn data -> %{data | status: "active"} end)
-# => %{user: %{name: "Alice", age: 30}, status: "inactive"}
+# => %{user: %{name: "alice", age: 30}, status: "inactive"}
 ```
 
 This ensures transformations are applied only when intended, preventing
 accidental updates.
 
+#### Custom Comparison Engine
+
+Matchbox allows customization of the comparison logic by implementing the
+`Matchbox.ComparisonEngine` behavior. This is useful when you need to
+define custom operators or modify existing comparison behaviors.
+
+#### Implementing a Custom Comparison Engine
+
+See `Matchbox.ComparisonEngine` for information on how to implement a
+comparison engine.
+
+For common comparison operations, refer to `Matchbox.CommonComparison`,
+which provides a set of standard comparison functions that can be
+extended or used as a reference for your own implementations.
+
+#### Configuring Matchbox to use the custom engine:
+
+You can specify your custom engine in the configuration:
+
+```elixir
+# config/config.exs
+config :matchbox, :comparison_engine, YourApp.ComparisonEngine
+```
+
+or you can specify your custom engine in the options at runtime:
+
+```elixir
+Matchbox.match_conditions?(123, %{all: :is_integer}, comparison_engine: YourApp.ComparisonEngine)
+```
+
 ## Documentation
 
 For full API documentation and more examples, visit: [HexDocs](https://hexdocs.pm/matchbox)
-
-## Configuration
-
-The following configuration is available:
-
-```elixir
-# Use a custom comparison engine instead of the default
-config :matchbox, :comparison_engine, YourApp.ComparisonEngine
-```
 
 ## Development & Contribution
 
 We welcome contributions! To set up your development environment:
 
-Clone the repository:
-
 ```sh
+# Clone the repository
 git clone https://github.com/cylkdev/matchbox.git
-```
 
-Navigate to the project:
-
-```sh
+# Navigate to the project directory
 cd matchbox
-```
 
-Install dependencies:
-
-```sh
+# Install dependencies
 mix deps.get
-```
 
-Run tests:
-
-```sh
+# Run tests
 mix test
 ```
 
 To contribute:
 
-  - **Report Issues:** Open an issue if you find a bug or have a feature request.
+  - **Report Issues:** Open an issue for bugs or feature requests.
 
-  - **Submit Pull Requests:** Fork the repository, create a new branch, make your changes, and submit a pull request.
+  - **Submit Pull** Requests: Fork the repo, create a branch, and submit a PR.
 
-  - **Code Style:** Follow Elixir's coding conventions and format your code using mix format.
+  - **Code Style:** Use mix format to maintain Elixir conventions.
 
 ## License
 
