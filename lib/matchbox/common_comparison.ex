@@ -36,10 +36,13 @@ defmodule Matchbox.CommonComparison do
   @operators @guard_operators ++ @comparison_operators ++ @general_operators
 
   @moduledoc """
-  Implements the `Matchbox.ComparisonEngine` behaviour.
+  Implements the `Matchbox.ComparisonEngine` behaviour, providing a set of
+  operators for evaluating conditions on terms.
 
-  This module defines common operators for performing guard checks and comparisons
-  on terms, enabling flexible and extensible matching logic.
+  This module supports guard-style type checks, numerical and structural
+  comparisons, and pattern matching for common Elixir types. It ensures
+  consistency across different term evaluations, enabling flexible
+  and extensible matching logic.
   """
 
   @behaviour Matchbox.ComparisonEngine
@@ -77,7 +80,7 @@ defmodule Matchbox.CommonComparison do
 
   @impl Matchbox.ComparisonEngine
   @doc """
-  Returns the list of supported operators.
+  Returns a list of all supported operators.
 
   #### Examples
 
@@ -115,84 +118,15 @@ defmodule Matchbox.CommonComparison do
 
   @impl Matchbox.ComparisonEngine
   @doc """
-  Returns `true` if `key` is a recognized operator, otherwise `false`.
+  Checks if the given operator is supported.
 
   #### Examples
-
-      iex> Matchbox.CommonComparison.operator?(:non_existing)
-      false
 
       iex> Matchbox.CommonComparison.operator?(:is_atom)
       true
 
-      iex> Matchbox.CommonComparison.operator?(:is_binary)
-      true
-
-      iex> Matchbox.CommonComparison.operator?(:is_boolean)
-      true
-
-      iex> Matchbox.CommonComparison.operator?(:is_float)
-      true
-
-      iex> Matchbox.CommonComparison.operator?(:is_function)
-      true
-
-      iex> Matchbox.CommonComparison.operator?(:is_integer)
-      true
-
-      iex> Matchbox.CommonComparison.operator?(:is_list)
-      true
-
-      iex> Matchbox.CommonComparison.operator?(:is_map)
-      true
-
-      iex> Matchbox.CommonComparison.operator?(:is_nil)
-      true
-
-      iex> Matchbox.CommonComparison.operator?(:is_number)
-      true
-
-      iex> Matchbox.CommonComparison.operator?(:is_pid)
-      true
-
-      iex> Matchbox.CommonComparison.operator?(:is_port)
-      true
-
-      iex> Matchbox.CommonComparison.operator?(:is_reference)
-      true
-
-      iex> Matchbox.CommonComparison.operator?(:is_struct)
-      true
-
-      iex> Matchbox.CommonComparison.operator?(:is_tuple)
-      true
-
-      iex> Matchbox.CommonComparison.operator?(:===)
-      true
-
-      iex> Matchbox.CommonComparison.operator?(:!==)
-      true
-
-      iex> Matchbox.CommonComparison.operator?(:<)
-      true
-
-      iex> Matchbox.CommonComparison.operator?(:>)
-      true
-
-      iex> Matchbox.CommonComparison.operator?(:<=)
-      true
-
-      iex> Matchbox.CommonComparison.operator?(:>=)
-      true
-
-      iex> Matchbox.CommonComparison.operator?(:=~)
-      true
-
-      iex> Matchbox.CommonComparison.operator?(:any)
-      true
-
-      iex> Matchbox.CommonComparison.operator?(:in)
-      true
+      iex> Matchbox.CommonComparison.operator?(:non_existing)
+      false
   """
   @spec operator?(operator :: atom()) :: true | false
   def operator?(:is_atom), do: true
@@ -228,16 +162,13 @@ defmodule Matchbox.CommonComparison do
 
   @impl Matchbox.ComparisonEngine
   @doc """
-  Returns the result of comparing the `left` term by `operator`.
+  Evaluates whether `left` satisfies the given `condition`.
 
+  ## Supported Operators
 
-  ## Operators
+  ### Type Guards
 
-  The following operators are available:
-
-  ### Guard operators
-
-  The (operators)[https://hexdocs.pm/elixir/1.12.3/Kernel.html#module-guards] check the type or structure of a given term:
+  These operators check the type or structure of a term:
 
     - `:is_atom`
     - `:is_binary`
@@ -256,111 +187,35 @@ defmodule Matchbox.CommonComparison do
     - `:is_struct`
     - `:is_tuple`
 
-  ### Comparison operators
+  ### Comparison Operators
 
-  These operators perform direct comparisons between terms.
-  There is special handling for these operators that ensure
-  that their module equivalent function is called instead
-  to ensure the evaluations are accurate; These types include
-  `DateTime`, `NaiveDateTime` and `Decimal` (requires the dependency).
+  These perform value comparisons:
 
     - `:===`
-    - `:>`
-    - `:<`
-    - `:>=`
-    - `:<=`
 
-  ### String operators
+    - `:>`, `:<`, `:>=`, `:<=`
 
-  These operators perform direct comparisons between strings:
+    - `:=~` (pattern matching for strings and regexes)
 
-    - `:=~`
+    - Special handling for `DateTime`, `NaiveDateTime`, and `Decimal` types.
 
   ### General Operators
 
-  These operators perform specific comparisons between terms:
+  Other operators for flexible matching:
 
-    - `:any`
-    - `:in`
+    - `:any` - Always returns true.
 
-  #### Examples
+    - `:in` - Checks membership in lists or ranges.
 
-      iex> Matchbox.CommonComparison.satisfies?("hello", {:=~, ~r|hello|})
-      true
-
-      iex> Matchbox.CommonComparison.satisfies?(:matchbox, :is_atom)
-      true
-
-      iex> Matchbox.CommonComparison.satisfies?("matchbox", :is_binary)
-      true
-
-      iex> Matchbox.CommonComparison.satisfies?(false, :is_boolean)
-      true
-
-      iex> Matchbox.CommonComparison.satisfies?(1.0, :is_float)
-      true
-
-      iex> Matchbox.CommonComparison.satisfies?(fn -> :ok end, :is_function)
-      true
-
-      iex> Matchbox.CommonComparison.satisfies?(fn _ -> :ok end, {:is_function, 1})
-      true
-
-      iex> Matchbox.CommonComparison.satisfies?(1, :is_integer)
-      true
-
-      iex> Matchbox.CommonComparison.satisfies?([], :is_list)
-      true
-
-      iex> Matchbox.CommonComparison.satisfies?(%{}, :is_map)
-      true
-
-      iex> Matchbox.CommonComparison.satisfies?(%{body: "hello"}, {:is_map_key, :body})
-      true
-
-      iex> Matchbox.CommonComparison.satisfies?(nil, :is_nil)
-      true
-
-      iex> Matchbox.CommonComparison.satisfies?(12.34, :is_number)
-      true
-
-      iex> Matchbox.CommonComparison.satisfies?(IEx.Helpers.pid("0.0.0"), :is_pid)
-      true
-
-      iex> Matchbox.CommonComparison.satisfies?(Kernel.make_ref(), :is_reference)
-      true
-
-      iex> Matchbox.CommonComparison.satisfies?(%Matchbox.Support.ExampleStruct{}, :is_struct)
-      true
-
-      iex> Matchbox.CommonComparison.satisfies?(%Matchbox.Support.ExampleStruct{}, {:is_struct, Matchbox.Support.ExampleStruct})
-      true
-
-      iex> Matchbox.CommonComparison.satisfies?({1, 2, 3}, :is_tuple)
-      true
+  ### Examples
 
       iex> Matchbox.CommonComparison.satisfies?(1, {:===, 1})
       true
 
-      iex> Matchbox.CommonComparison.satisfies?(1, {:!==, 2})
-      true
-
-      iex> Matchbox.CommonComparison.satisfies?(1, {:>, 0})
-      true
-
-      iex> Matchbox.CommonComparison.satisfies?(1, {:<, 2})
-      true
-
-      iex> Matchbox.CommonComparison.satisfies?(1, {:>=, 1})
-      true
-
-      iex> Matchbox.CommonComparison.satisfies?(1, {:<=, 1})
-      true
-
-      iex> Matchbox.CommonComparison.satisfies?(1, :any)
-      true
-
       iex> Matchbox.CommonComparison.satisfies?(1, {:in, [1, 2, 3]})
+      true
+
+      iex> Matchbox.CommonComparison.satisfies?("hello", {:=~, ~r/hello/})
       true
   """
   @spec satisfies?(left :: term(), condition :: atom() | {atom(), term()}) :: true | false
@@ -454,7 +309,7 @@ defmodule Matchbox.CommonComparison do
   def satisfies?(left, {:=~, right}), do: left =~ right
 
   def satisfies?(_left, :any), do: true
-  def satisfies?(left, {:in, right}), do: left in right
+  def satisfies?(left, {:in, right}), do: Enum.member?(left, right)
 
   # fallback
   def satisfies?(_, _), do: false

@@ -82,109 +82,109 @@ defmodule Matchbox do
       true
   """
   @spec match_conditions?(
-          term :: term(),
+          subject :: term(),
           conditions :: map() | keyword()
         ) :: true | false
   @spec match_conditions?(
-          term :: term(),
+          subject :: term(),
           conditions :: map() | keyword(),
           opts :: keyword()
         ) :: true | false
-  def match_conditions?(term, conditions, opts \\ []) do
-    Enum.any?(conditions) and validate_conditions(term, conditions, opts)
+  def match_conditions?(subject, conditions, opts \\ []) do
+    Enum.any?(conditions) and validate_conditions(subject, conditions, opts)
   end
 
-  defp validate_conditions(term, conditions, opts) do
+  defp validate_conditions(subject, conditions, opts) do
     Enum.all?(conditions, fn
-      {qual, exprs} when qual in [:all, :any] ->
-        validate_conditional_exprs(term, qual, exprs, opts)
+      {qual, con} when qual in [:all, :any] ->
+        conditional_check(subject, qual, con, opts)
 
       term ->
         raise "Expected qualifier to be `:all` or `:any`, got: #{inspect(term)}"
     end)
   end
 
-  defp validate_conditional_exprs(term, qual, exprs, opts) do
+  defp conditional_check(subject, qual, con, opts) do
     cond do
-      is_tuple(term) ->
-        term
+      is_tuple(subject) ->
+        subject
         |> Tuple.to_list()
-        |> validate_conditional_exprs(qual, exprs, opts)
+        |> conditional_check(qual, con, opts)
 
-      is_list(term) and Keyword.keyword?(term) ->
-        term_match_conditions?(term, qual, exprs, opts)
+      is_list(subject) and Keyword.keyword?(subject) ->
+        match_conditions?(subject, qual, con, opts)
 
-      is_list(term) ->
-        with true <- Enum.any?(term) do
-          term
-          |> Enum.map(fn term -> term_match_conditions?(term, qual, exprs, opts) end)
+      is_list(subject) ->
+        with true <- Enum.any?(subject) do
+          subject
+          |> Enum.map(fn term -> match_conditions?(term, qual, con, opts) end)
           |> apply_qualifier(qual, &(&1 === true))
         end
 
       true ->
-        term_match_conditions?(term, qual, exprs, opts)
+        match_conditions?(subject, qual, con, opts)
     end
   end
 
-  defp term_match_conditions?(term, qual, exprs, opts) do
-    if is_list(exprs) or is_map(exprs) do
-      apply_qualifier(exprs, qual, &eval_expr(term, qual, &1, opts))
+  defp match_conditions?(subject, qual, con, opts) do
+    if is_list(con) or is_map(con) do
+      apply_qualifier(con, qual, &eval_expr(subject, qual, &1, opts))
     else
-      eval_expr(term, qual, exprs, opts)
+      eval_expr(subject, qual, con, opts)
     end
   end
 
-  defp apply_qualifier(term, :any, fun), do: Enum.any?(term, fun)
-  defp apply_qualifier(term, :all, fun), do: Enum.all?(term, fun)
+  defp apply_qualifier(subject, :any, fun), do: Enum.any?(subject, fun)
+  defp apply_qualifier(subject, :all, fun), do: Enum.all?(subject, fun)
 
-  defp eval_expr(term, qual, {key, exprs}, opts) when is_list(term) do
+  defp eval_expr(subject, qual, {key, val}, opts) when is_list(subject) do
     cond do
       ComparisonEngine.operator?(key, opts) ->
-        ComparisonEngine.satisfies?(term, {key, exprs}, opts)
+        ComparisonEngine.satisfies?(subject, {key, val}, opts)
 
-      Keyword.keyword?(term) ->
-        case Keyword.get(term, key) do
+      Keyword.keyword?(subject) ->
+        case Keyword.get(subject, key) do
           nil -> false
-          val -> term_match_conditions?(val, qual, exprs, opts)
+          subject -> match_conditions?(subject, qual, val, opts)
         end
 
       true ->
-        validate_conditional_exprs(term, qual, exprs, opts)
+        conditional_check(subject, qual, val, opts)
     end
   end
 
-  defp eval_expr(term, qual, {key, exprs}, opts) when is_map(term) do
+  defp eval_expr(subject, qual, {key, val}, opts) when is_map(subject) do
     cond do
       ComparisonEngine.operator?(key, opts) ->
-        ComparisonEngine.satisfies?(term, {key, exprs}, opts)
+        ComparisonEngine.satisfies?(subject, {key, val}, opts)
 
       ComparisonEngine.operator?(key, opts) ->
-        case Map.get(term, key) do
+        case Map.get(subject, key) do
           nil -> false
-          input_val -> ComparisonEngine.satisfies?(input_val, exprs, opts)
+          subject -> ComparisonEngine.satisfies?(subject, val, opts)
         end
 
       true ->
-        case Map.get(term, key) do
+        case Map.get(subject, key) do
           nil -> false
-          val -> term_match_conditions?(val, qual, exprs, opts)
+          subject -> match_conditions?(subject, qual, val, opts)
         end
     end
   end
 
-  defp eval_expr(left_term, _qual, {key, exprs} = right_term, opts) do
+  defp eval_expr(subject, _qual, {key, val} = tuple, opts) do
     if ComparisonEngine.operator?(key, opts) do
-      ComparisonEngine.satisfies?(left_term, {key, exprs}, opts)
+      ComparisonEngine.satisfies?(subject, {key, val}, opts)
     else
-      left_term === right_term
+      subject === tuple
     end
   end
 
-  defp eval_expr(left_term, _qual, right_term, opts) do
-    if ComparisonEngine.operator?(right_term, opts) do
-      ComparisonEngine.satisfies?(left_term, right_term, opts)
+  defp eval_expr(subject, _qual, val, opts) do
+    if ComparisonEngine.operator?(val, opts) do
+      ComparisonEngine.satisfies?(subject, val, opts)
     else
-      left_term === right_term
+      subject === val
     end
   end
 end
