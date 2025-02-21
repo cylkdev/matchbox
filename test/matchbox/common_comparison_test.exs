@@ -136,108 +136,108 @@ defmodule Matchbox.CommonComparisonTest do
     end
   end
 
-  describe "satisfies?" do
+  describe "validate?" do
     test "check with operator :is_atom" do
-      assert Matchbox.CommonComparison.satisfies?(:matchbox, :is_atom)
+      assert Matchbox.CommonComparison.validate?(:matchbox, :is_atom)
     end
 
     test "check with operator :is_binary" do
-      assert Matchbox.CommonComparison.satisfies?("matchbox", :is_binary)
+      assert Matchbox.CommonComparison.validate?("matchbox", :is_binary)
     end
 
     test "check with operator :is_boolean" do
-      assert Matchbox.CommonComparison.satisfies?(false, :is_boolean)
+      assert Matchbox.CommonComparison.validate?(false, :is_boolean)
     end
 
     test "check with operator :is_float" do
-      assert Matchbox.CommonComparison.satisfies?(1.0, :is_float)
+      assert Matchbox.CommonComparison.validate?(1.0, :is_float)
     end
 
     test "check with operator :is_function" do
-      assert Matchbox.CommonComparison.satisfies?(fn -> :ok end, :is_function)
+      assert Matchbox.CommonComparison.validate?(fn -> :ok end, :is_function)
 
-      assert Matchbox.CommonComparison.satisfies?(fn _ -> :ok end, {:is_function, 1})
+      assert Matchbox.CommonComparison.validate?(fn _ -> :ok end, {:is_function, 1})
     end
 
     test "check with operator :is_integer" do
-      assert Matchbox.CommonComparison.satisfies?(1, :is_integer)
+      assert Matchbox.CommonComparison.validate?(1, :is_integer)
     end
 
     test "check with operator :is_list" do
-      assert Matchbox.CommonComparison.satisfies?([], :is_list)
+      assert Matchbox.CommonComparison.validate?([], :is_list)
     end
 
     test "check with operator :is_map" do
-      assert Matchbox.CommonComparison.satisfies?(%{}, :is_map)
+      assert Matchbox.CommonComparison.validate?(%{}, :is_map)
     end
 
     test "check with operator :is_map_key" do
-      assert Matchbox.CommonComparison.satisfies?(%{body: "hello"}, {:is_map_key, :body})
+      assert Matchbox.CommonComparison.validate?(%{body: "hello"}, {:is_map_key, :body})
     end
 
     test "check with operator :is_nil" do
-      assert Matchbox.CommonComparison.satisfies?(nil, :is_nil)
+      assert Matchbox.CommonComparison.validate?(nil, :is_nil)
     end
 
     test "check with operator :is_number" do
-      assert Matchbox.CommonComparison.satisfies?(12.34, :is_number)
+      assert Matchbox.CommonComparison.validate?(12.34, :is_number)
     end
 
     test "check with operator :is_pid" do
-      assert Matchbox.CommonComparison.satisfies?(IEx.Helpers.pid("0.0.0"), :is_pid)
+      assert Matchbox.CommonComparison.validate?(IEx.Helpers.pid("0.0.0"), :is_pid)
     end
 
     test "check with operator :is_reference" do
-      assert Matchbox.CommonComparison.satisfies?(Kernel.make_ref(), :is_reference)
+      assert Matchbox.CommonComparison.validate?(Kernel.make_ref(), :is_reference)
     end
 
     test "check with operator :is_struct" do
-      assert Matchbox.CommonComparison.satisfies?(%Matchbox.Support.ExampleStruct{}, :is_struct)
+      assert Matchbox.CommonComparison.validate?(%Matchbox.Support.ExampleStruct{}, :is_struct)
 
-      assert Matchbox.CommonComparison.satisfies?(
+      assert Matchbox.CommonComparison.validate?(
                %Matchbox.Support.ExampleStruct{},
                {:is_struct, Matchbox.Support.ExampleStruct}
              )
     end
 
     test "check with operator :is_tuple" do
-      assert Matchbox.CommonComparison.satisfies?({1, 2, 3}, :is_tuple)
+      assert Matchbox.CommonComparison.validate?({1, 2, 3}, :is_tuple)
     end
 
     test "check with operator :===" do
-      assert Matchbox.CommonComparison.satisfies?(1, {:===, 1})
+      assert Matchbox.CommonComparison.validate?(1, {:===, 1})
     end
 
     test "check with operator :!==" do
-      assert Matchbox.CommonComparison.satisfies?(1, {:!==, 2})
+      assert Matchbox.CommonComparison.validate?(1, {:!==, 2})
     end
 
     test "check with operator :>" do
-      assert Matchbox.CommonComparison.satisfies?(1, {:>, 0})
+      assert Matchbox.CommonComparison.validate?(1, {:>, 0})
     end
 
     test "check with operator :<" do
-      assert Matchbox.CommonComparison.satisfies?(1, {:<, 2})
+      assert Matchbox.CommonComparison.validate?(1, {:<, 2})
     end
 
     test "check with operator :>=" do
-      assert Matchbox.CommonComparison.satisfies?(1, {:>=, 1})
+      assert Matchbox.CommonComparison.validate?(1, {:>=, 1})
     end
 
     test "check with operator :<=" do
-      assert Matchbox.CommonComparison.satisfies?(1, {:<=, 1})
+      assert Matchbox.CommonComparison.validate?(1, {:<=, 1})
     end
 
     test "check with operator :=~" do
-      assert Matchbox.CommonComparison.satisfies?("example", {:=~, ~r|example|})
+      assert Matchbox.CommonComparison.validate?("example", {:=~, ~r|example|})
     end
 
     test "check with operator :any" do
-      assert Matchbox.CommonComparison.satisfies?({1, 2, 3}, :any)
+      assert Matchbox.CommonComparison.validate?({1, 2, 3}, :any)
     end
 
     test "check with operator :in" do
-      assert Matchbox.CommonComparison.satisfies?(1, {:in, [1, 2, 3]})
+      assert Matchbox.CommonComparison.validate?(1, {:in, [1, 2, 3]})
     end
   end
 end

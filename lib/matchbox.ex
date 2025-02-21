@@ -35,7 +35,7 @@ defmodule Matchbox do
           opts :: keyword()
         ) :: term()
   def transform(term, conditions, transform_fun, opts \\ []) do
-    if match_conditions?(term, conditions, opts) do
+    if satisfies?(term, conditions, opts) do
       if is_function(transform_fun, 1) do
         transform_fun.(term)
       else
@@ -66,31 +66,31 @@ defmodule Matchbox do
   ### Examples
 
       # Exact match
-      iex> Matchbox.match_conditions?("hello", %{all: "hello"})
+      iex> Matchbox.satisfies?("hello", %{all: "hello"})
       true
 
       # Numeric comparison
-      iex> Matchbox.match_conditions?(5, %{all: %{>: 3}})
+      iex> Matchbox.satisfies?(5, %{all: %{>: 3}})
       true
 
       # List match (any item)
-      iex> Matchbox.match_conditions?([1, 2, 3], %{any: 1})
+      iex> Matchbox.satisfies?([1, 2, 3], %{any: 1})
       true
 
       # Map match (nested key)
-      iex> Matchbox.match_conditions?(%{body: "hello"}, %{all: %{body: "hello"}})
+      iex> Matchbox.satisfies?(%{body: "hello"}, %{all: %{body: "hello"}})
       true
   """
-  @spec match_conditions?(
+  @spec satisfies?(
           subject :: term(),
           conditions :: map() | keyword()
         ) :: true | false
-  @spec match_conditions?(
+  @spec satisfies?(
           subject :: term(),
           conditions :: map() | keyword(),
           opts :: keyword()
         ) :: true | false
-  def match_conditions?(subject, conditions, opts \\ []) do
+  def satisfies?(subject, conditions, opts \\ []) do
     Enum.any?(conditions) and validate_conditions(subject, conditions, opts)
   end
 
@@ -112,21 +112,21 @@ defmodule Matchbox do
         |> conditional_check(qual, con, opts)
 
       is_list(subject) and Keyword.keyword?(subject) ->
-        match_conditions?(subject, qual, con, opts)
+        satisfies?(subject, qual, con, opts)
 
       is_list(subject) ->
         with true <- Enum.any?(subject) do
           subject
-          |> Enum.map(fn term -> match_conditions?(term, qual, con, opts) end)
+          |> Enum.map(fn term -> satisfies?(term, qual, con, opts) end)
           |> apply_qualifier(qual, &(&1 === true))
         end
 
       true ->
-        match_conditions?(subject, qual, con, opts)
+        satisfies?(subject, qual, con, opts)
     end
   end
 
-  defp match_conditions?(subject, qual, con, opts) do
+  defp satisfies?(subject, qual, con, opts) do
     if is_list(con) or is_map(con) do
       apply_qualifier(con, qual, &eval_expr(subject, qual, &1, opts))
     else
@@ -140,12 +140,12 @@ defmodule Matchbox do
   defp eval_expr(subject, qual, {key, val}, opts) when is_list(subject) do
     cond do
       ComparisonEngine.operator?(key, opts) ->
-        ComparisonEngine.satisfies?(subject, {key, val}, opts)
+        ComparisonEngine.validate?(subject, {key, val}, opts)
 
       Keyword.keyword?(subject) ->
         case Keyword.get(subject, key) do
           nil -> false
-          subject -> match_conditions?(subject, qual, val, opts)
+          subject -> satisfies?(subject, qual, val, opts)
         end
 
       true ->
@@ -156,25 +156,25 @@ defmodule Matchbox do
   defp eval_expr(subject, qual, {key, val}, opts) when is_map(subject) do
     cond do
       ComparisonEngine.operator?(key, opts) ->
-        ComparisonEngine.satisfies?(subject, {key, val}, opts)
+        ComparisonEngine.validate?(subject, {key, val}, opts)
 
       ComparisonEngine.operator?(key, opts) ->
         case Map.get(subject, key) do
           nil -> false
-          subject -> ComparisonEngine.satisfies?(subject, val, opts)
+          subject -> ComparisonEngine.validate?(subject, val, opts)
         end
 
       true ->
         case Map.get(subject, key) do
           nil -> false
-          subject -> match_conditions?(subject, qual, val, opts)
+          subject -> satisfies?(subject, qual, val, opts)
         end
     end
   end
 
   defp eval_expr(subject, _qual, {key, val} = tuple, opts) do
     if ComparisonEngine.operator?(key, opts) do
-      ComparisonEngine.satisfies?(subject, {key, val}, opts)
+      ComparisonEngine.validate?(subject, {key, val}, opts)
     else
       subject === tuple
     end
@@ -182,7 +182,7 @@ defmodule Matchbox do
 
   defp eval_expr(subject, _qual, val, opts) do
     if ComparisonEngine.operator?(val, opts) do
-      ComparisonEngine.satisfies?(subject, val, opts)
+      ComparisonEngine.validate?(subject, val, opts)
     else
       subject === val
     end

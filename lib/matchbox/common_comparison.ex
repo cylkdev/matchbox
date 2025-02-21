@@ -209,108 +209,108 @@ defmodule Matchbox.CommonComparison do
 
   ### Examples
 
-      iex> Matchbox.CommonComparison.satisfies?(1, {:===, 1})
+      iex> Matchbox.CommonComparison.validate?(1, {:===, 1})
       true
 
-      iex> Matchbox.CommonComparison.satisfies?(1, {:in, [1, 2, 3]})
+      iex> Matchbox.CommonComparison.validate?(1, {:in, [1, 2, 3]})
       true
 
-      iex> Matchbox.CommonComparison.satisfies?("hello", {:=~, ~r/hello/})
+      iex> Matchbox.CommonComparison.validate?("hello", {:=~, ~r/hello/})
       true
   """
-  @spec satisfies?(left :: term(), condition :: atom() | {atom(), term()}) :: true | false
-  def satisfies?(term, :is_atom), do: is_atom(term)
-  def satisfies?(term, :is_binary), do: is_binary(term)
-  def satisfies?(term, :is_boolean), do: is_boolean(term)
-  def satisfies?(term, :is_float), do: is_float(term)
-  def satisfies?(term, :is_function), do: is_function(term)
-  def satisfies?(term, {:is_function, arity}), do: is_function(term, arity)
-  def satisfies?(term, :is_integer), do: is_integer(term)
-  def satisfies?(term, :is_list), do: is_list(term)
-  def satisfies?(term, :is_map), do: is_map(term)
-  def satisfies?(term, {:is_map_key, key}), do: is_map_key(term, key)
-  def satisfies?(term, :is_nil), do: is_nil(term)
-  def satisfies?(term, :is_number), do: is_number(term)
-  def satisfies?(term, :is_pid), do: is_pid(term)
-  def satisfies?(term, :is_port), do: is_port(term)
-  def satisfies?(term, :is_reference), do: is_reference(term)
-  def satisfies?(term, :is_struct), do: is_struct(term)
-  def satisfies?(term, {:is_struct, name}), do: is_struct(term, name)
-  def satisfies?(term, :is_tuple), do: is_tuple(term)
+  @spec validate?(left :: term(), condition :: atom() | {atom(), term()}) :: true | false
+  def validate?(term, :is_atom), do: is_atom(term)
+  def validate?(term, :is_binary), do: is_binary(term)
+  def validate?(term, :is_boolean), do: is_boolean(term)
+  def validate?(term, :is_float), do: is_float(term)
+  def validate?(term, :is_function), do: is_function(term)
+  def validate?(term, {:is_function, arity}), do: is_function(term, arity)
+  def validate?(term, :is_integer), do: is_integer(term)
+  def validate?(term, :is_list), do: is_list(term)
+  def validate?(term, :is_map), do: is_map(term)
+  def validate?(term, {:is_map_key, key}), do: is_map_key(term, key)
+  def validate?(term, :is_nil), do: is_nil(term)
+  def validate?(term, :is_number), do: is_number(term)
+  def validate?(term, :is_pid), do: is_pid(term)
+  def validate?(term, :is_port), do: is_port(term)
+  def validate?(term, :is_reference), do: is_reference(term)
+  def validate?(term, :is_struct), do: is_struct(term)
+  def validate?(term, {:is_struct, name}), do: is_struct(term, name)
+  def validate?(term, :is_tuple), do: is_tuple(term)
 
   # DateTime API
 
-  def satisfies?(left, {:===, right}) when is_struct(left, DateTime),
+  def validate?(left, {:===, right}) when is_struct(left, DateTime),
     do: DateTime.compare(left, right) === :eq
 
-  def satisfies?(left, {:!==, right}) when is_struct(left, DateTime),
+  def validate?(left, {:!==, right}) when is_struct(left, DateTime),
     do: DateTime.compare(left, right) !== :eq
 
-  def satisfies?(left, {:>, right}) when is_struct(left, DateTime),
+  def validate?(left, {:>, right}) when is_struct(left, DateTime),
     do: DateTime.compare(left, right) === :gt
 
-  def satisfies?(left, {:<, right}) when is_struct(left, DateTime),
+  def validate?(left, {:<, right}) when is_struct(left, DateTime),
     do: DateTime.compare(left, right) === :lt
 
-  def satisfies?(left, {:>=, right}) when is_struct(left, DateTime),
+  def validate?(left, {:>=, right}) when is_struct(left, DateTime),
     do: DateTime.compare(left, right) in [:eq, :gt]
 
-  def satisfies?(left, {:<=, right}) when is_struct(left, DateTime),
+  def validate?(left, {:<=, right}) when is_struct(left, DateTime),
     do: DateTime.compare(left, right) in [:eq, :lt]
 
   # NaiveDateTime API
 
-  def satisfies?(left, {:===, right}) when is_struct(left, NaiveDateTime),
+  def validate?(left, {:===, right}) when is_struct(left, NaiveDateTime),
     do: NaiveDateTime.compare(left, right) === :eq
 
-  def satisfies?(left, {:!==, right}) when is_struct(left, NaiveDateTime),
+  def validate?(left, {:!==, right}) when is_struct(left, NaiveDateTime),
     do: NaiveDateTime.compare(left, right) !== :eq
 
-  def satisfies?(left, {:>, right}) when is_struct(left, NaiveDateTime),
+  def validate?(left, {:>, right}) when is_struct(left, NaiveDateTime),
     do: NaiveDateTime.compare(left, right) === :gt
 
-  def satisfies?(left, {:<, right}) when is_struct(left, NaiveDateTime),
+  def validate?(left, {:<, right}) when is_struct(left, NaiveDateTime),
     do: NaiveDateTime.compare(left, right) === :lt
 
-  def satisfies?(left, {:>=, right}) when is_struct(left, NaiveDateTime),
+  def validate?(left, {:>=, right}) when is_struct(left, NaiveDateTime),
     do: NaiveDateTime.compare(left, right) in [:eq, :gt]
 
-  def satisfies?(left, {:<=, right}) when is_struct(left, NaiveDateTime),
+  def validate?(left, {:<=, right}) when is_struct(left, NaiveDateTime),
     do: NaiveDateTime.compare(left, right) in [:eq, :lt]
 
   # Decimal API
 
   if Code.ensure_loaded?(Decimal) do
-    def satisfies?(left, {:===, right}) when is_struct(left, Decimal),
+    def validate?(left, {:===, right}) when is_struct(left, Decimal),
       do: Decimal.compare(left, right) === :eq
 
-    def satisfies?(left, {:!==, right}) when is_struct(left, Decimal),
+    def validate?(left, {:!==, right}) when is_struct(left, Decimal),
       do: Decimal.compare(left, right) !== :eq
 
-    def satisfies?(left, {:>, right}) when is_struct(left, Decimal),
+    def validate?(left, {:>, right}) when is_struct(left, Decimal),
       do: Decimal.compare(left, right) === :gt
 
-    def satisfies?(left, {:<, right}) when is_struct(left, Decimal),
+    def validate?(left, {:<, right}) when is_struct(left, Decimal),
       do: Decimal.compare(left, right) === :lt
 
-    def satisfies?(left, {:>=, right}) when is_struct(left, Decimal),
+    def validate?(left, {:>=, right}) when is_struct(left, Decimal),
       do: Decimal.compare(left, right) in [:eq, :gt]
 
-    def satisfies?(left, {:<=, right}) when is_struct(left, Decimal),
+    def validate?(left, {:<=, right}) when is_struct(left, Decimal),
       do: Decimal.compare(left, right) in [:eq, :lt]
   end
 
-  def satisfies?(left, {:===, right}), do: left === right
-  def satisfies?(left, {:!==, right}), do: left !== right
-  def satisfies?(left, {:>, right}), do: left > right
-  def satisfies?(left, {:<, right}), do: left < right
-  def satisfies?(left, {:>=, right}), do: left >= right
-  def satisfies?(left, {:<=, right}), do: left <= right
-  def satisfies?(left, {:=~, right}), do: left =~ right
+  def validate?(left, {:===, right}), do: left === right
+  def validate?(left, {:!==, right}), do: left !== right
+  def validate?(left, {:>, right}), do: left > right
+  def validate?(left, {:<, right}), do: left < right
+  def validate?(left, {:>=, right}), do: left >= right
+  def validate?(left, {:<=, right}), do: left <= right
+  def validate?(left, {:=~, right}), do: left =~ right
 
-  def satisfies?(_left, :any), do: true
-  def satisfies?(left, {:in, right}), do: Enum.member?(left, right)
+  def validate?(_left, :any), do: true
+  def validate?(left, {:in, enum}), do: Enum.member?(enum, left)
 
   # fallback
-  def satisfies?(_, _), do: false
+  def validate?(_, _), do: false
 end

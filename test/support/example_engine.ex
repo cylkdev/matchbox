@@ -11,5 +11,5 @@ defmodule Matchbox.Support.ExampleEngine do
   def operator?(_), do: false
 
   @impl Matchbox.ComparisonEngine
-  def satisfies?(left, {:===, right}), do: left === right
+  def validate?(left, {:===, right}), do: left === right
 end

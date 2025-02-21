@@ -83,7 +83,7 @@ conditions = %{
   }
 }
 
-Matchbox.match_conditions?(data, conditions)
+Matchbox.satisfies?(data, conditions)
 # => true
 ```
 
@@ -129,7 +129,7 @@ defmodule MyApp.CustomComparisonEngine do
   @behaviour Matchbox.ComparisonEngine
 
   @impl true
-  def satisfies?(left, {:===, right}) do
+  def validate?(left, {:===, right}) do
     # Define custom comparison logic
     left === right
   end
@@ -141,7 +141,7 @@ end
 You can set a custom comparison engine at runtime:
 
 ```elixir
-Matchbox.match_conditions?(123, %{all: :is_integer}, comparison_engine: MyApp.CustomComparisonEngine)
+Matchbox.satisfies?(123, %{all: :is_integer}, comparison_engine: MyApp.CustomComparisonEngine)
 ```
 
 Or via the configuration option:

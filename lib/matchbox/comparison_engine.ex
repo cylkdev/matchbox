@@ -25,12 +25,12 @@ defmodule Matchbox.ComparisonEngine do
     def operator?(_), do: false
 
     @impl Matchbox.ComparisonEngine
-    def satisfies?(left, {:===, right}), do: left === right
-    def satisfies?(_, _), do: false
+    def validate?(left, {:===, right}), do: left === right
+    def validate?(_, _), do: false
   end
   ```
 
-  The `satisfies?/2` function in this example checks whether
+  The `validate?/2` function in this example checks whether
   the provided value matches the expected value using the
   strict equality (`:===`) operator.
 
@@ -46,7 +46,7 @@ defmodule Matchbox.ComparisonEngine do
   You can specify a custom engine at runtime:
 
   ```elixir
-  Matchbox.match_conditions?(
+  Matchbox.satisfies?(
     123,
     %{all: :is_integer},
     comparison_engine: Matchbox.Support.ExampleEngine
@@ -98,12 +98,12 @@ defmodule Matchbox.ComparisonEngine do
   ### Examples
 
   ```elixir
-  iex> Matchbox.Support.ExampleEngine.satisfies?("example", {:===, "example"})
+  iex> Matchbox.Support.ExampleEngine.validate?("example", {:===, "example"})
   true
   ```
   """
   @doc group: "Comparison Engine API"
-  @callback satisfies?(left :: term(), condition :: term()) :: true | false
+  @callback validate?(left :: term(), condition :: term()) :: true | false
 
   @doc """
   Executes the callback function `operators/0`.
@@ -142,7 +142,7 @@ defmodule Matchbox.ComparisonEngine do
   end
 
   @doc """
-  Executes the callback function `satisfies?/2`.
+  Executes the callback function `validate?/2`.
 
   ### Options
 
@@ -150,13 +150,13 @@ defmodule Matchbox.ComparisonEngine do
 
   ## Examples
 
-      iex> Matchbox.ComparisonEngine.satisfies?(1, {:===, 1}, comparison_engine: Matchbox.Support.ExampleEngine)
+      iex> Matchbox.ComparisonEngine.validate?(1, {:===, 1}, comparison_engine: Matchbox.Support.ExampleEngine)
       true
   """
-  @spec satisfies?(left :: term(), condition :: term()) :: true | false
-  @spec satisfies?(left :: term(), condition :: term(), opts :: keyword()) :: true | false
-  def satisfies?(left, condition, opts \\ []) do
-    adapter(opts).satisfies?(left, condition)
+  @spec validate?(left :: term(), condition :: term()) :: true | false
+  @spec validate?(left :: term(), condition :: term(), opts :: keyword()) :: true | false
+  def validate?(left, condition, opts \\ []) do
+    adapter(opts).validate?(left, condition)
   end
 
   defp adapter(opts) do
