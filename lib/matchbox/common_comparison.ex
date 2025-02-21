@@ -194,10 +194,7 @@ defmodule Matchbox.CommonComparison do
       iex> Matchbox.CommonComparison.operator?(:in)
       true
   """
-  @spec operator?(key :: atom()) :: true | false
-  def operator?(:any), do: true
-  def operator?(:in), do: true
-
+  @spec operator?(operator :: atom()) :: true | false
   def operator?(:is_atom), do: true
   def operator?(:is_binary), do: true
   def operator?(:is_boolean), do: true
@@ -222,6 +219,9 @@ defmodule Matchbox.CommonComparison do
   def operator?(:>=), do: true
   def operator?(:<=), do: true
   def operator?(:=~), do: true
+
+  def operator?(:any), do: true
+  def operator?(:in), do: true
 
   # fallback
   def operator?(_), do: false
@@ -363,10 +363,7 @@ defmodule Matchbox.CommonComparison do
       iex> Matchbox.CommonComparison.satisfies?(1, {:in, [1, 2, 3]})
       true
   """
-  @spec satisfies?(left :: term(), right :: term()) :: true | false
-  def satisfies?(_left, :any), do: true
-  def satisfies?(left, {:in, right}), do: left in right
-
+  @spec satisfies?(left :: term(), condition :: atom() | {atom(), term()}) :: true | false
   def satisfies?(term, :is_atom), do: is_atom(term)
   def satisfies?(term, :is_binary), do: is_binary(term)
   def satisfies?(term, :is_boolean), do: is_boolean(term)
@@ -386,27 +383,66 @@ defmodule Matchbox.CommonComparison do
   def satisfies?(term, {:is_struct, name}), do: is_struct(term, name)
   def satisfies?(term, :is_tuple), do: is_tuple(term)
 
-  def satisfies?(left, {:===, right}) when is_struct(left, DateTime), do: DateTime.compare(left, right) === :eq
-  def satisfies?(left, {:!==, right}) when is_struct(left, DateTime), do: DateTime.compare(left, right) !== :eq
-  def satisfies?(left, {:>, right}) when is_struct(left, DateTime), do: DateTime.compare(left, right) === :gt
-  def satisfies?(left, {:<, right}) when is_struct(left, DateTime), do: DateTime.compare(left, right) === :lt
-  def satisfies?(left, {:>=, right}) when is_struct(left, DateTime), do: DateTime.compare(left, right) in [:eq, :gt]
-  def satisfies?(left, {:<=, right}) when is_struct(left, DateTime), do: DateTime.compare(left, right) in [:eq, :lt]
+  # DateTime API
 
-  def satisfies?(left, {:===, right}) when is_struct(left, NaiveDateTime), do: NaiveDateTime.compare(left, right) === :eq
-  def satisfies?(left, {:!==, right}) when is_struct(left, NaiveDateTime), do: NaiveDateTime.compare(left, right) !== :eq
-  def satisfies?(left, {:>, right}) when is_struct(left, NaiveDateTime), do: NaiveDateTime.compare(left, right) === :gt
-  def satisfies?(left, {:<, right}) when is_struct(left, NaiveDateTime), do: NaiveDateTime.compare(left, right) === :lt
-  def satisfies?(left, {:>=, right}) when is_struct(left, NaiveDateTime), do: NaiveDateTime.compare(left, right) in [:eq, :gt]
-  def satisfies?(left, {:<=, right}) when is_struct(left, NaiveDateTime), do: NaiveDateTime.compare(left, right) in [:eq, :lt]
+  def satisfies?(left, {:===, right}) when is_struct(left, DateTime),
+    do: DateTime.compare(left, right) === :eq
+
+  def satisfies?(left, {:!==, right}) when is_struct(left, DateTime),
+    do: DateTime.compare(left, right) !== :eq
+
+  def satisfies?(left, {:>, right}) when is_struct(left, DateTime),
+    do: DateTime.compare(left, right) === :gt
+
+  def satisfies?(left, {:<, right}) when is_struct(left, DateTime),
+    do: DateTime.compare(left, right) === :lt
+
+  def satisfies?(left, {:>=, right}) when is_struct(left, DateTime),
+    do: DateTime.compare(left, right) in [:eq, :gt]
+
+  def satisfies?(left, {:<=, right}) when is_struct(left, DateTime),
+    do: DateTime.compare(left, right) in [:eq, :lt]
+
+  # NaiveDateTime API
+
+  def satisfies?(left, {:===, right}) when is_struct(left, NaiveDateTime),
+    do: NaiveDateTime.compare(left, right) === :eq
+
+  def satisfies?(left, {:!==, right}) when is_struct(left, NaiveDateTime),
+    do: NaiveDateTime.compare(left, right) !== :eq
+
+  def satisfies?(left, {:>, right}) when is_struct(left, NaiveDateTime),
+    do: NaiveDateTime.compare(left, right) === :gt
+
+  def satisfies?(left, {:<, right}) when is_struct(left, NaiveDateTime),
+    do: NaiveDateTime.compare(left, right) === :lt
+
+  def satisfies?(left, {:>=, right}) when is_struct(left, NaiveDateTime),
+    do: NaiveDateTime.compare(left, right) in [:eq, :gt]
+
+  def satisfies?(left, {:<=, right}) when is_struct(left, NaiveDateTime),
+    do: NaiveDateTime.compare(left, right) in [:eq, :lt]
+
+  # Decimal API
 
   if Code.ensure_loaded?(Decimal) do
-    def satisfies?(left, {:===, right}) when is_struct(left, Decimal), do: Decimal.compare(left, right) === :eq
-    def satisfies?(left, {:!==, right}) when is_struct(left, Decimal), do: Decimal.compare(left, right) !== :eq
-    def satisfies?(left, {:>, right}) when is_struct(left, Decimal), do: Decimal.compare(left, right) === :gt
-    def satisfies?(left, {:<, right}) when is_struct(left, Decimal), do: Decimal.compare(left, right) === :lt
-    def satisfies?(left, {:>=, right}) when is_struct(left, Decimal), do: Decimal.compare(left, right) in [:eq, :gt]
-    def satisfies?(left, {:<=, right}) when is_struct(left, Decimal), do: Decimal.compare(left, right) in [:eq, :lt]
+    def satisfies?(left, {:===, right}) when is_struct(left, Decimal),
+      do: Decimal.compare(left, right) === :eq
+
+    def satisfies?(left, {:!==, right}) when is_struct(left, Decimal),
+      do: Decimal.compare(left, right) !== :eq
+
+    def satisfies?(left, {:>, right}) when is_struct(left, Decimal),
+      do: Decimal.compare(left, right) === :gt
+
+    def satisfies?(left, {:<, right}) when is_struct(left, Decimal),
+      do: Decimal.compare(left, right) === :lt
+
+    def satisfies?(left, {:>=, right}) when is_struct(left, Decimal),
+      do: Decimal.compare(left, right) in [:eq, :gt]
+
+    def satisfies?(left, {:<=, right}) when is_struct(left, Decimal),
+      do: Decimal.compare(left, right) in [:eq, :lt]
   end
 
   def satisfies?(left, {:===, right}), do: left === right
@@ -415,8 +451,10 @@ defmodule Matchbox.CommonComparison do
   def satisfies?(left, {:<, right}), do: left < right
   def satisfies?(left, {:>=, right}), do: left >= right
   def satisfies?(left, {:<=, right}), do: left <= right
-
   def satisfies?(left, {:=~, right}), do: left =~ right
+
+  def satisfies?(_left, :any), do: true
+  def satisfies?(left, {:in, right}), do: left in right
 
   # fallback
   def satisfies?(_, _), do: false

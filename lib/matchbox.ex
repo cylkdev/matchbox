@@ -101,7 +101,6 @@ defmodule Matchbox do
 
       term ->
         raise "Expected qualifier to be `:all` or `:any`, got: #{inspect(term)}"
-
     end)
   end
 

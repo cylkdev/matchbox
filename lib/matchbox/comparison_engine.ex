@@ -1,28 +1,28 @@
 defmodule Matchbox.ComparisonEngine do
   @moduledoc """
-  Defines the API required for adapters.
+  Defines the required API for adapters.
 
-  Engines define supported operators and implement logic
-  to evaluate whether a given operation is satisfied.
+  A comparison engine is responsible for evaluating whether
+  a given value satisfies a specified condition using a set
+  of defined operators. This allows Matchbox to support
+  flexible and extensible data evaluations.
 
   ## Creating an Adapter
 
-  To create a custom engine adapter, implement the `Matchbox.ComparisonEngine`
-  behaviour and define the required callback functions:
+  To implement a custom comparison engine, a module must
+  define the `Matchbox.ComparisonEngine` behaviour and
+  implement the required callbacks.
 
   ```elixir
-  defmodule MyApp.CustomComparisonEngine do
+  defmodule Matchbox.Support.ExampleEngine do
     @behaviour Matchbox.ComparisonEngine
 
     @impl Matchbox.ComparisonEngine
-    def operators do
-      [:===, :!=, :>, :<]
-    end
+    def operators, do: [:===]
 
     @impl Matchbox.ComparisonEngine
-    def operator?(key) do
-      key in operators()
-    end
+    def operator?(:===), do: true
+    def operator?(_), do: false
 
     @impl Matchbox.ComparisonEngine
     def satisfies?(left, {:===, right}), do: left === right
@@ -30,67 +30,83 @@ defmodule Matchbox.ComparisonEngine do
   end
   ```
 
-  Then, use your custom engine by specifying it in the options:
+  The `satisfies?/2` function in this example checks whether
+  the provided value matches the expected value using the
+  strict equality (`:===`) operator.
+
+  Unsupported operations return `false`.
+
+  ## Default Comparison Engine
+
+  Matchbox provides a default implementation, `Matchbox.CommonComparison`,
+  which supports commonly used operators such as `:===`, `:>`, and `:<`.
+
+  ### Overriding the Default Engine
+
+  You can specify a custom engine at runtime:
 
   ```elixir
-  Matchbox.ComparisonEngine.operators(engine: MyCustomEngine)
-  Matchbox.ComparisonEngine.operator?(:===, engine: MyCustomEngine)
-  Matchbox.ComparisonEngine.satisfies?(5, :>, 3, engine: MyCustomEngine)
+  Matchbox.match_conditions?(
+    123,
+    %{all: :is_integer},
+    comparison_engine: Matchbox.Support.ExampleEngine
+  )
+  ```
+
+  Or configure it globally in `config/config.exs`:
+
+  ```elixir
+  # config/config.exs
+  config :matchbox, :comparison_engine, Matchbox.Support.ExampleEngine
   ```
 
   ## Shared Options
 
-    * `comparison_engine` - The module responsible for custom comparisons, such as guard-based checks.
-
-        This option is resolved as follows:
-
-        - An attempt is made to get the module from the option `:comparison_engine`.
-        - If the option value is `nil` an attempt is made to get the module from the configuration
-          option `:comparison_engine` (e.g. `config :matchbox, :comparison_engine, YourApp.ComparisonEngine`)
-        - If the configuration option is `nil` it defaults to `Matchbox.CommonComparison`.
+    - `comparison_engine:` (optional) – Defines a custom comparison
+      engine module to use. Defaults to `Matchbox.CommonComparison`.
   """
 
   @doc """
-  Returns a list of operators supported by the comparison engine.
-
-  Implementing modules must define this function.
+  Returns the list of operators supported by the comparison engine.
 
   ### Examples
 
-      iex> Matchbox.Support.ExampleEngine.operators()
-      [:===]
+  ```elixir
+  iex> Matchbox.Support.ExampleEngine.operators()
+  [:===]
+  ```
   """
   @doc group: "Comparison Engine API"
-  @callback operators :: list()
+  @callback operators :: list(operator :: atom())
 
   @doc """
-  Returns `true` if the given `key` is a recognized operator otherwise `false`.
-
-  Implementing modules must define this function.
+  Checks if the given key is a recognized operator.
 
   ### Examples
 
-      iex> Matchbox.Support.ExampleEngine.operator?(:===)
-      true
+  ```elixir
+  iex> Matchbox.Support.ExampleEngine.operator?(:===)
+  true
+  ```
   """
   @doc group: "Comparison Engine API"
-  @callback operator?(key :: term()) :: true | false
+  @callback operator?(operator :: atom()) :: true | false
 
   @doc """
   Checks if the given `left` operand satisfies the specified `operator`.
 
-  Implementing modules must define this function.
-
   ### Examples
 
-      iex> Matchbox.Support.ExampleEngine.satisfies?("example", {:===, "example"})
-      true
+  ```elixir
+  iex> Matchbox.Support.ExampleEngine.satisfies?("example", {:===, "example"})
+  true
+  ```
   """
   @doc group: "Comparison Engine API"
-  @callback satisfies?(left :: term(), right :: term()) :: true | false
+  @callback satisfies?(left :: term(), condition :: term()) :: true | false
 
   @doc """
-  Returns the list of operators supported by the specified engine.
+  Executes the callback function `operators/0`.
 
   ### Options
 
@@ -104,11 +120,11 @@ defmodule Matchbox.ComparisonEngine do
   @spec operators :: list()
   @spec operators(opts :: keyword()) :: list()
   def operators(opts \\ []) do
-    engine!(opts).operators()
+    adapter(opts).operators()
   end
 
   @doc """
-  Checks if the given `key` is a recognized operator in the specified engine.
+  Executes the callback function `operator?/1`.
 
   ### Options
 
@@ -116,17 +132,17 @@ defmodule Matchbox.ComparisonEngine do
 
   ### Examples
 
-      iex> Matchbox.ComparisonEngine.operator?(:===, engine: Matchbox.Support.ExampleEngine)
+      iex> Matchbox.ComparisonEngine.operator?(:===, comparison_engine: Matchbox.Support.ExampleEngine)
       true
   """
-  @spec operator?(key :: term()) :: true | false
-  @spec operator?(key :: term(), opts :: keyword()) :: true | false
-  def operator?(key, opts \\ []) do
-    engine!(opts).operator?(key)
+  @spec operator?(operator :: atom()) :: true | false
+  @spec operator?(operator :: atom(), opts :: keyword()) :: true | false
+  def operator?(operator, opts \\ []) do
+    adapter(opts).operator?(operator)
   end
 
   @doc """
-  Evaluates whether the given `left` operand satisfies the specified `operator`.
+  Executes the callback function `satisfies?/2`.
 
   ### Options
 
@@ -134,16 +150,18 @@ defmodule Matchbox.ComparisonEngine do
 
   ## Examples
 
-      iex> Matchbox.ComparisonEngine.satisfies?(1, {:===, 1}, engine: Matchbox.Support.ExampleEngine)
+      iex> Matchbox.ComparisonEngine.satisfies?(1, {:===, 1}, comparison_engine: Matchbox.Support.ExampleEngine)
       true
   """
-  @spec satisfies?(left :: term(), right :: term()) :: true | false
-  @spec satisfies?(left :: term(), right :: term(), opts :: keyword()) :: true | false
-  def satisfies?(left, right, opts \\ []) do
-    engine!(opts).satisfies?(left, right)
+  @spec satisfies?(left :: term(), condition :: term()) :: true | false
+  @spec satisfies?(left :: term(), condition :: term(), opts :: keyword()) :: true | false
+  def satisfies?(left, condition, opts \\ []) do
+    adapter(opts).satisfies?(left, condition)
   end
 
-  defp engine!(opts) do
-    opts[:comparison_engine] || Matchbox.Config.comparison_engine() || Matchbox.CommonComparison
+  defp adapter(opts) do
+    opts[:comparison_engine] ||
+      Matchbox.Config.comparison_engine() ||
+      Matchbox.CommonComparison
   end
 end
