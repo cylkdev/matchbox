@@ -8,9 +8,9 @@ defmodule Matchbox.MixProject do
     [
       app: :matchbox,
       description:
-        "A standardized declarative API for pattern matching and transformation of terms, reducing boilerplate and improving code clarity.",
+        "A standardized declarative API for pattern matching and transformation of terms.",
       version: @version,
-      elixir: "~> 1.12",
+      elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -66,6 +66,8 @@ defmodule Matchbox.MixProject do
       # Testing & Coverage
       {:excoveralls, "~> 0.1", only: :test, runtime: false, optional: true},
       {:ex_check, "~> 0.1", only: [:dev, :test], runtime: false, optional: true},
+
+      # Decimal
       {:decimal, ">= 0.0.0", optional: true}
     ]
   end

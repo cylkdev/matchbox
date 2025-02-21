@@ -160,8 +160,6 @@ defmodule Matchbox.ComparisonEngine do
   end
 
   defp adapter(opts) do
-    opts[:comparison_engine] ||
-      Matchbox.Config.comparison_engine() ||
-      Matchbox.CommonComparison
+    opts[:comparison_engine] || Matchbox.Config.comparison_engine() || Matchbox.CommonComparison
   end
 end

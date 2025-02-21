@@ -54,14 +54,14 @@ jobs:
           path: deps
           key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
           restore-keys: ${{ runner.os }}-mix-
-      - name: Install dependencies
-        run: mix deps.get
-      - name: Run tests
+      - name: Get and Compile dependencies
+        run: mix do deps.get, deps.compile
+      - name: Run mix test
         run: CI=true RELEASE_BUILD=true MIX_ENV=test mix test --color
-      - name: Run credo
+      - name: Run mix credo
         run: mix credo --strict
-      - name: Run dialyzer
+      - name: Run mix dialyzer
         run: mix dialyzer
-      - name: Run coveralls
+      - name: Run mix coveralls
         run: mix coveralls
       

@@ -219,6 +219,9 @@ defmodule Matchbox.CommonComparison do
       true
   """
   @spec validate?(left :: term(), condition :: atom() | {atom(), term()}) :: true | false
+
+  # Guard API
+
   def validate?(term, :is_atom), do: is_atom(term)
   def validate?(term, :is_binary), do: is_binary(term)
   def validate?(term, :is_boolean), do: is_boolean(term)
@@ -300,6 +303,8 @@ defmodule Matchbox.CommonComparison do
       do: Decimal.compare(left, right) in [:eq, :lt]
   end
 
+  # General API
+
   def validate?(left, {:===, right}), do: left === right
   def validate?(left, {:!==, right}), do: left !== right
   def validate?(left, {:>, right}), do: left > right
@@ -310,6 +315,15 @@ defmodule Matchbox.CommonComparison do
 
   def validate?(_left, :any), do: true
   def validate?(left, {:in, enum}), do: Enum.member?(enum, left)
+
+  # Ecto API
+
+  if Code.ensure_loaded?(Ecto) do
+    def validate?(changeset, {:is_changeset_struct, name})
+        when is_struct(changeset, Ecto.Changeset) do
+      is_struct(changeset.data, name)
+    end
+  end
 
   # fallback
   def validate?(_, _), do: false

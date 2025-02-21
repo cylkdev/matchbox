@@ -96,20 +96,17 @@ defmodule Matchbox do
 
   defp validate_conditions(subject, conditions, opts) do
     Enum.all?(conditions, fn
-      {qual, con} when qual in [:all, :any] ->
-        conditional_check(subject, qual, con, opts)
-
-      term ->
-        raise "Expected qualifier to be `:all` or `:any`, got: #{inspect(term)}"
+      {qual, con} when qual in [:all, :any] -> check_condition(subject, qual, con, opts)
+      term -> raise "Expected qualifier to be `:all` or `:any`, got: #{inspect(term)}"
     end)
   end
 
-  defp conditional_check(subject, qual, con, opts) do
+  defp check_condition(subject, qual, con, opts) do
     cond do
       is_tuple(subject) ->
         subject
         |> Tuple.to_list()
-        |> conditional_check(qual, con, opts)
+        |> check_condition(qual, con, opts)
 
       is_list(subject) and Keyword.keyword?(subject) ->
         satisfies?(subject, qual, con, opts)
@@ -145,11 +142,11 @@ defmodule Matchbox do
       Keyword.keyword?(subject) ->
         case Keyword.get(subject, key) do
           nil -> false
-          subject -> satisfies?(subject, qual, val, opts)
+          entry -> satisfies?(entry, qual, val, opts)
         end
 
       true ->
-        conditional_check(subject, qual, val, opts)
+        check_condition(subject, qual, val, opts)
     end
   end
 
@@ -161,13 +158,13 @@ defmodule Matchbox do
       ComparisonEngine.operator?(key, opts) ->
         case Map.get(subject, key) do
           nil -> false
-          subject -> ComparisonEngine.validate?(subject, val, opts)
+          entry -> ComparisonEngine.validate?(entry, val, opts)
         end
 
       true ->
         case Map.get(subject, key) do
           nil -> false
-          subject -> satisfies?(subject, qual, val, opts)
+          entry -> satisfies?(entry, qual, val, opts)
         end
     end
   end
