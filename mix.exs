@@ -7,7 +7,7 @@ defmodule Matchbox.MixProject do
   def project do
     [
       app: :matchbox,
-      description: "A standardized api for comparing and transforming terms.",
+      description: "A standardized declarative API for pattern matching and transformation of terms, reducing boilerplate and improving code clarity.",
       version: @version,
       elixir: "~> 1.12",
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -64,7 +64,9 @@ defmodule Matchbox.MixProject do
 
       # Testing & Coverage
       {:excoveralls, "~> 0.1", only: :test, runtime: false, optional: true},
-      {:ex_check, "~> 0.1", only: [:dev, :test], runtime: false, optional: true}
+      {:ex_check, "~> 0.1", only: [:dev, :test], runtime: false, optional: true},
+
+      {:decimal, ">= 0.0.0", optional: true}
     ]
   end
 
@@ -79,17 +81,40 @@ defmodule Matchbox.MixProject do
 
   defp docs do
     [
-      main: "readme",
+      main: "Matchbox",
       source_url: "https://github.com/cylkdev/matchbox",
-      extras: [
-        "CHANGELOG.md": [],
-        "LICENSE.txt": [title: "License"],
-        "README.md": [title: "Readme"]
-      ],
       source_url: @source_url,
       source_ref: @version,
       api_reference: false,
-      skip_undefined_reference_warnings_on: ["CHANGELOG.md"]
+      skip_undefined_reference_warnings_on: ["CHANGELOG.md"],
+      extras: extras(),
+      groups_for_extras: groups_for_extras(),
+      groups_for_docs: [
+        group_for_function("Comparison Engine API")
+      ],
+      groups_for_modules: [
+        "ComparisonEngine API": [
+          Matchbox.ComparisonEngine,
+          Matchbox.CommonComparison
+        ]
+      ]
+    ]
+  end
+
+  defp extras do
+    [
+      "guides/howtos/Filtering Collections.md",
+      "CHANGELOG.md": [],
+      "LICENSE.txt": [title: "License"],
+      "README.md": [title: "Readme"]
+    ]
+  end
+
+  defp group_for_function(group), do: {String.to_atom(group), &(&1[:group] == group)}
+
+  defp groups_for_extras do
+    [
+      "How-To's": ~r/guides\/howtos\/.?/
     ]
   end
 end

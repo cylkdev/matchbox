@@ -1,21 +1,27 @@
 # Matchbox
 
-Matchbox is an Elixir library that enhances native pattern matching in
-Elixir by providing a declarative API for complex data structures. It
-streamlines comparing and transforming nested data, reducing
-boilerplate and improving code maintainability.
+**Matchbox** provides a standardized way to compare data and check if it
+meets specific conditions. Instead of manually writing conditional checks,
+you define `conditions` using a **map** or **keyword list**, and Matchbox
+evaluates whether the data satisfies them.
+
+This reduces repetitive code and makes comparisons more readable and
+maintainable.
 
 ## Features
 
-  – Declaratively match nested structures.
+- **Declarative Data Matching** – Define complex matching conditions using
+  **maps** or **keyword lists** to avoid repetitive logic.
 
-  – Modify terms based on pattern matching rules.
+- **Conditional Transformations** – Modify data **only when** specified
+  conditions are met, ensuring predictable updates.
 
-  – Simple and readable syntax.
+- **Customizable Comparison Logic** – Extend functionality by implementing a
+  custom `Matchbox.ComparisonEngine`.
 
 ## Installation
 
-Add `matchbox` to your list of dependencies in `mix.exs`:
+Add `matchbox` to your `mix.exs` dependencies:
 
 ```elixir
 def deps do
@@ -25,7 +31,7 @@ def deps do
 end
 ```
 
-Then, fetch the dependencies:
+Then, fetch dependencies:
 
 ```sh
 mix deps.get
@@ -33,182 +39,126 @@ mix deps.get
 
 ## Usage
 
-### Pattern Matching in Elixir vs. Matchbox
+### Pattern Matching
 
-Pattern matching in Elixir is powerful, but handling deeply nested structures
-can require multiple conditions, making the code more complex over time.
+Elixir’s pattern matching is powerful, but checking **deeply nested data**
+manually can be tedious.
 
-Consider the following standard Elixir approach:
+Suppose we want to check if a **user** is **30 years old and named Alice**.
+A common approach might use a `case` statement:
 
 ```elixir
+data = %{
+  user: %{
+    age: 30,
+    name: "Alice",
+    city: "Vancouver"
+  }
+}
+
 case data do
-  %{user: %{age: 30, name: "alice"}} -> true
+  %{user: %{age: 30, name: "Alice"}} -> true
   _ -> false
 end
+# => true
 ```
 
-Here, we check if the data map contains a user key with an age of 30 and
-a name of "alice". This approach works but becomes harder to manage as
-conditions grow.
+While this works, adding more conditions makes the logic harder to manage
+and maintain. Instead of manually writing multiple condition checks, Matchbox
+provides a declarative approach that lets us express conditions in a structured
+format.
 
-With `Matchbox`, we can express the same logic more declaratively:
+#### **Using Matchbox**
+
+Instead of writing multiple `case` conditions, Matchbox lets us **describe what
+we expect** using a **map** or **keyword list**:
 
 ```elixir
-data = %{user: %{age: 30, name: "alice", city: "Vancouver"}}
-
-conditions = %{all: %{user: %{age: 30, name: "alice"}}}
+conditions = %{
+  all: %{
+    user: %{
+      age: 30,
+      name: "Alice"
+    }
+  }
+}
 
 Matchbox.match_conditions?(data, conditions)
 # => true
 ```
 
-Here, `match_conditions?/2` checks if all specified conditions are met in
-the data structure, making it more readable and maintainable.
+This approach **keeps logic clear** and allows for easy modifications.
 
-### Handling Non-Matching Cases
+---
 
-When conditions do not match, Matchbox returns false instead of requiring
-manual case handling.
+### Data Transformation
+
+Matchbox also supports **conditional transformations**, ensuring updates happen
+**only when** conditions are met.
+
+Consider an example where **inactive users should be marked as active**:
 
 ```elixir
-data = %{status: "pending"}
-
-conditions = %{all: %{status: "active"}}
-
-Matchbox.match_conditions?(data, conditions)
-# => false
+updated_data = if data.status == "inactive", do: %{data | status: "active"}, else: data
 ```
 
-This approach eliminates the need for multiple case conditions to determine mismatches.
-
-### Filtering Nested Data with Conditions
-
-`Matchbox` simplifies filtering collections by allowing expressive queries on
-nested structures.
-
-Consider filtering a list of users where the status is active, the id is
-greater than 1, and the name starts with "A":
+With Matchbox, we **separate what we're checking for from what we want to change**:
 
 ```elixir
-data = [
-  %{status: :inactive, user: %{id: 1, name: "annie"}},
-  %{status: :active, user: %{id: 2, name: "bart"}},
-  %{status: :active, user: %{id: 3, name: "alice"}}
-]
-
-conditions = %{
-  all: %{
-    status: :active,
-    user: %{id: %{>: 1},
-    name: %{=~: ~r/^a(.*)/}}
-  }
-}
-
-Enum.filter(data, &Matchbox.match_conditions?(&1, conditions))
-# => [%{status: :active, user: %{id: 3, name: "alice"}}]
-```
-
-This is significantly more readable than manually iterating and filtering
-within a standard `Enum.filter/2` function.
-
-### Transforming Data in Matchbox
-
-Modifying deeply nested structures in Elixir often requires using functions
-like `Map.merge/2` or recursive updates.
-
-Consider the following approach:
-
-```elixir
-Map.merge(data, %{status: "active"})
-```
-
-This works well for shallow updates but becomes cumbersome for deeper
-structures. Matchbox provides a cleaner way to apply transformations
-only when all conditions match:
-
-```elixir
-data = %{user: %{name: "alice", age: 30}, status: "inactive"}
-
 conditions = %{all: %{status: "inactive"}}
 
-Matchbox.transform(data, conditions, fn data -> %{data | status: "active"} end)
-# => %{status: "active", user: %{name: "alice", age: 30}}
+Matchbox.transform(data, conditions, fn d -> %{d | status: "active"} end)
+# => %{status: "active", user: %{name: "Alice", age: 30}}
 ```
 
-If no match occurs, the data remains unchanged:
+If the conditions do not match, the data remains unchanged.
+
+---
+
+### Custom Comparison Engine
+
+You can define **custom comparison rules** by implementing `Matchbox.ComparisonEngine`,
+allowing Matchbox to evaluate conditions based on your own logic.
+
+#### **Example: Custom Comparison Engine**
+
+Create a module implementing `Matchbox.ComparisonEngine`:
 
 ```elixir
-data = %{user: %{name: "alice", age: 30}, status: "inactive"}
+defmodule MyApp.CustomComparisonEngine do
+  @behaviour Matchbox.ComparisonEngine
 
-conditions = %{all: %{name: "bart"}}
-
-Matchbox.transform(data, conditions, fn data -> %{data | status: "active"} end)
-# => %{user: %{name: "alice", age: 30}, status: "inactive"}
+  @impl true
+  def satisfies?(left, {:===, right}) do
+    # Define custom comparison logic
+    left === right
+  end
+end
 ```
 
-This ensures transformations are applied only when intended, preventing
-accidental updates.
+#### **Configuring a Custom Engine**
 
-#### Custom Comparison Engine
-
-Matchbox allows customization of the comparison logic by implementing the
-`Matchbox.ComparisonEngine` behavior. This is useful when you need to
-define custom operators or modify existing comparison behaviors.
-
-#### Implementing a Custom Comparison Engine
-
-See `Matchbox.ComparisonEngine` for information on how to implement a
-comparison engine.
-
-For common comparison operations, refer to `Matchbox.CommonComparison`,
-which provides a set of standard comparison functions that can be
-extended or used as a reference for your own implementations.
-
-#### Configuring Matchbox to use the custom engine:
-
-You can specify your custom engine in the configuration:
+You can set a custom comparison engine at runtime:
 
 ```elixir
-# config/config.exs
-config :matchbox, :comparison_engine, YourApp.ComparisonEngine
+Matchbox.match_conditions?(123, %{all: :is_integer}, comparison_engine: MyApp.CustomComparisonEngine)
 ```
 
-or you can specify your custom engine in the options at runtime:
+Or via the configuration option:
 
 ```elixir
-Matchbox.match_conditions?(123, %{all: :is_integer}, comparison_engine: YourApp.ComparisonEngine)
+config :matchbox, :comparison_engine, MyApp.CustomComparisonEngine
 ```
+
+For more details on built-in comparisons, see `Matchbox.CommonComparison`.
+
+---
 
 ## Documentation
 
-For full API documentation and more examples, visit: [HexDocs](https://hexdocs.pm/matchbox)
-
-## Development & Contribution
-
-We welcome contributions! To set up your development environment:
-
-```sh
-# Clone the repository
-git clone https://github.com/cylkdev/matchbox.git
-
-# Navigate to the project directory
-cd matchbox
-
-# Install dependencies
-mix deps.get
-
-# Run tests
-mix test
-```
-
-To contribute:
-
-  - **Report Issues:** Open an issue for bugs or feature requests.
-
-  - **Submit Pull** Requests: Fork the repo, create a branch, and submit a PR.
-
-  - **Code Style:** Use mix format to maintain Elixir conventions.
+For full API documentation, visit: [HexDocs](https://hexdocs.pm/matchbox).
 
 ## License
 
-Matchbox is released under the [MIT License](https://github.com/cylkdev/matchbox/blob/main/LICENSE).
+Matchbox is released under the [MIT License](./LICENSE.txt).
+

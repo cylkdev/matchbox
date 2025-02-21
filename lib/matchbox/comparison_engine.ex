@@ -11,7 +11,7 @@ defmodule Matchbox.ComparisonEngine do
   behaviour and define the required callback functions:
 
   ```elixir
-  defmodule MyCustomEngine do
+  defmodule MyApp.CustomComparisonEngine do
     @behaviour Matchbox.ComparisonEngine
 
     @impl Matchbox.ComparisonEngine
@@ -26,9 +26,6 @@ defmodule Matchbox.ComparisonEngine do
 
     @impl Matchbox.ComparisonEngine
     def satisfies?(left, {:===, right}), do: left === right
-    def satisfies?(left, {:!=, right}), do: left != right
-    def satisfies?(left, {:>, right}), do: left > right
-    def satisfies?(left, {:<, right}), do: left < right
     def satisfies?(_, _), do: false
   end
   ```
@@ -63,6 +60,7 @@ defmodule Matchbox.ComparisonEngine do
       iex> Matchbox.Support.ExampleEngine.operators()
       [:===]
   """
+  @doc group: "Comparison Engine API"
   @callback operators :: list()
 
   @doc """
@@ -75,6 +73,7 @@ defmodule Matchbox.ComparisonEngine do
       iex> Matchbox.Support.ExampleEngine.operator?(:===)
       true
   """
+  @doc group: "Comparison Engine API"
   @callback operator?(key :: term()) :: true | false
 
   @doc """
@@ -87,6 +86,7 @@ defmodule Matchbox.ComparisonEngine do
       iex> Matchbox.Support.ExampleEngine.satisfies?("example", {:===, "example"})
       true
   """
+  @doc group: "Comparison Engine API"
   @callback satisfies?(left :: term(), right :: term()) :: true | false
 
   @doc """

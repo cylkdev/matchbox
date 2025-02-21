@@ -40,49 +40,6 @@ defmodule Matchbox.CommonComparison do
 
   This module defines common operators for performing guard checks and comparisons
   on terms, enabling flexible and extensible matching logic.
-
-  ## Operators
-
-  The following operators are available:
-
-  ### Guard operators
-
-  The (operators)[https://hexdocs.pm/elixir/1.12.3/Kernel.html#module-guards] check the type or structure of a given term:
-
-    - `:is_atom`
-    - `:is_binary`
-    - `:is_boolean`
-    - `:is_float`
-    - `:is_function`
-    - `:is_integer`
-    - `:is_list`
-    - `:is_map`
-    - `:is_map_key`
-    - `:is_nil`
-    - `:is_number`
-    - `:is_pid`
-    - `:is_port`
-    - `:is_reference`
-    - `:is_struct`
-    - `:is_tuple`
-
-  ### Comparison operators
-
-  These operators perform direct comparisons between terms:
-
-    - `:===`
-    - `:>`
-    - `:<`
-    - `:>=`
-    - `:<=`
-    - `:=~`
-
-  ### General Operators
-
-  These operators perform specific comparisons between terms:
-
-      - `:any`
-      - `:in`
   """
 
   @behaviour Matchbox.ComparisonEngine
@@ -273,6 +230,59 @@ defmodule Matchbox.CommonComparison do
   @doc """
   Returns the result of comparing the `left` term by `operator`.
 
+
+  ## Operators
+
+  The following operators are available:
+
+  ### Guard operators
+
+  The (operators)[https://hexdocs.pm/elixir/1.12.3/Kernel.html#module-guards] check the type or structure of a given term:
+
+    - `:is_atom`
+    - `:is_binary`
+    - `:is_boolean`
+    - `:is_float`
+    - `:is_function`
+    - `:is_integer`
+    - `:is_list`
+    - `:is_map`
+    - `:is_map_key`
+    - `:is_nil`
+    - `:is_number`
+    - `:is_pid`
+    - `:is_port`
+    - `:is_reference`
+    - `:is_struct`
+    - `:is_tuple`
+
+  ### Comparison operators
+
+  These operators perform direct comparisons between terms.
+  There is special handling for these operators that ensure
+  that their module equivalent function is called instead
+  to ensure the evaluations are accurate; These types include
+  `DateTime`, `NaiveDateTime` and `Decimal` (requires the dependency).
+
+    - `:===`
+    - `:>`
+    - `:<`
+    - `:>=`
+    - `:<=`
+
+  ### String operators
+
+  These operators perform direct comparisons between strings:
+
+    - `:=~`
+
+  ### General Operators
+
+  These operators perform specific comparisons between terms:
+
+    - `:any`
+    - `:in`
+
   #### Examples
 
       iex> Matchbox.CommonComparison.satisfies?("hello", {:=~, ~r|hello|})
@@ -376,12 +386,36 @@ defmodule Matchbox.CommonComparison do
   def satisfies?(term, {:is_struct, name}), do: is_struct(term, name)
   def satisfies?(term, :is_tuple), do: is_tuple(term)
 
+  def satisfies?(left, {:===, right}) when is_struct(left, DateTime), do: DateTime.compare(left, right) === :eq
+  def satisfies?(left, {:!==, right}) when is_struct(left, DateTime), do: DateTime.compare(left, right) !== :eq
+  def satisfies?(left, {:>, right}) when is_struct(left, DateTime), do: DateTime.compare(left, right) === :gt
+  def satisfies?(left, {:<, right}) when is_struct(left, DateTime), do: DateTime.compare(left, right) === :lt
+  def satisfies?(left, {:>=, right}) when is_struct(left, DateTime), do: DateTime.compare(left, right) in [:eq, :gt]
+  def satisfies?(left, {:<=, right}) when is_struct(left, DateTime), do: DateTime.compare(left, right) in [:eq, :lt]
+
+  def satisfies?(left, {:===, right}) when is_struct(left, NaiveDateTime), do: NaiveDateTime.compare(left, right) === :eq
+  def satisfies?(left, {:!==, right}) when is_struct(left, NaiveDateTime), do: NaiveDateTime.compare(left, right) !== :eq
+  def satisfies?(left, {:>, right}) when is_struct(left, NaiveDateTime), do: NaiveDateTime.compare(left, right) === :gt
+  def satisfies?(left, {:<, right}) when is_struct(left, NaiveDateTime), do: NaiveDateTime.compare(left, right) === :lt
+  def satisfies?(left, {:>=, right}) when is_struct(left, NaiveDateTime), do: NaiveDateTime.compare(left, right) in [:eq, :gt]
+  def satisfies?(left, {:<=, right}) when is_struct(left, NaiveDateTime), do: NaiveDateTime.compare(left, right) in [:eq, :lt]
+
+  if Code.ensure_loaded?(Decimal) do
+    def satisfies?(left, {:===, right}) when is_struct(left, Decimal), do: Decimal.compare(left, right) === :eq
+    def satisfies?(left, {:!==, right}) when is_struct(left, Decimal), do: Decimal.compare(left, right) !== :eq
+    def satisfies?(left, {:>, right}) when is_struct(left, Decimal), do: Decimal.compare(left, right) === :gt
+    def satisfies?(left, {:<, right}) when is_struct(left, Decimal), do: Decimal.compare(left, right) === :lt
+    def satisfies?(left, {:>=, right}) when is_struct(left, Decimal), do: Decimal.compare(left, right) in [:eq, :gt]
+    def satisfies?(left, {:<=, right}) when is_struct(left, Decimal), do: Decimal.compare(left, right) in [:eq, :lt]
+  end
+
   def satisfies?(left, {:===, right}), do: left === right
   def satisfies?(left, {:!==, right}), do: left !== right
   def satisfies?(left, {:>, right}), do: left > right
   def satisfies?(left, {:<, right}), do: left < right
   def satisfies?(left, {:>=, right}), do: left >= right
   def satisfies?(left, {:<=, right}), do: left <= right
+
   def satisfies?(left, {:=~, right}), do: left =~ right
 
   # fallback

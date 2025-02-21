@@ -1,53 +1,6 @@
 defmodule Matchbox do
-  @moduledoc """
-  Matchbox simplifies comparisons and transformations
-  by using structured data.
+  @moduledoc File.read!("README.md")
 
-  Instead of writing multiple `if` or `case` statements,
-  you define conditions in a map or keyword list. This
-  makes code cleaner, easier to read, and more
-  maintainable.
-
-  ## Why Use Matchbox?
-
-  Consider checking the value of a field in a list of maps:
-
-  ```elixir
-  iex> Matchbox.match_conditions?([%{message: "hello"}, %{message: "why hello there!"}], %{all: %{message: %{=~: ~r/hello/}}})
-  true
-  ```
-
-  This eliminates manual iteration and multiple conditionals.
-
-  ## Installation
-
-  Add Matchbox to your `mix.exs` dependencies:
-
-  ```elixir
-  def deps do
-    [
-      {:matchbox, "~> 0.1.0"}
-    ]
-  end
-  ```
-
-  ## How It Works
-
-  Matchbox evaluates comparisons using a **comparison engine**.
-  The default engine, `Matchbox.CommonComparison`, supports:
-
-    - Elixir guards (`is_binary/1`, `is_map/1`, etc.)
-
-    - Comparison operators (`===`, `>`, `<`, `=~`, etc.)
-
-  It also allows **qualifiers** for list comparisons:
-
-    - `:all` - Requires all elements to match
-
-    - `:any` - Requires at least one match
-
-  See `Matchbox.CommonComparison` for details.
-  """
   alias Matchbox.ComparisonEngine
 
   @doc """
@@ -142,12 +95,13 @@ defmodule Matchbox do
   end
 
   defp validate_conditions(term, conditions, opts) do
-    Enum.all?(conditions, fn {qual, exprs} ->
-      if qual in [:all, :any] do
+    Enum.all?(conditions, fn
+      {qual, exprs} when qual in [:all, :any] ->
         validate_conditional_exprs(term, qual, exprs, opts)
-      else
+
+      term ->
         raise "Expected qualifier to be `:all` or `:any`, got: #{inspect(term)}"
-      end
+
     end)
   end
 
