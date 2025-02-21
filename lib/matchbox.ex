@@ -91,41 +91,41 @@ defmodule Matchbox do
           opts :: keyword()
         ) :: true | false
   def satisfies?(subject, conditions, opts \\ []) do
-    Enum.any?(conditions) and validate_conditions(subject, conditions, opts)
+    with true <- Enum.any?(conditions) do
+      Enum.all?(conditions, fn
+        {qual, con} when qual in [:all, :any] -> validate_conditions(subject, qual, con, opts)
+        term -> raise "Expected qualifier to be `:all` or `:any`, got: #{inspect(term)}"
+      end)
+    end
   end
 
-  defp validate_conditions(subject, conditions, opts) do
-    Enum.all?(conditions, fn
-      {qual, con} when qual in [:all, :any] -> check_condition(subject, qual, con, opts)
-      term -> raise "Expected qualifier to be `:all` or `:any`, got: #{inspect(term)}"
-    end)
-  end
-
-  defp check_condition(subject, qual, con, opts) do
+  defp validate_conditions(subject, qual, con, opts) do
     cond do
       is_tuple(subject) ->
         subject
         |> Tuple.to_list()
-        |> check_condition(qual, con, opts)
+        |> validate_conditions(qual, con, opts)
 
       is_list(subject) and Keyword.keyword?(subject) ->
-        satisfies?(subject, qual, con, opts)
+        pass_condition?(subject, qual, con, opts)
 
       is_list(subject) ->
         with true <- Enum.any?(subject) do
           subject
-          |> Enum.map(fn term -> satisfies?(term, qual, con, opts) end)
+          |> Enum.map(fn term -> pass_condition?(term, qual, con, opts) end)
           |> apply_qualifier(qual, &(&1 === true))
         end
 
       true ->
-        satisfies?(subject, qual, con, opts)
+        pass_condition?(subject, qual, con, opts)
     end
   end
 
-  defp satisfies?(subject, qual, con, opts) do
+  defp pass_condition?(subject, qual, con, opts) do
     if is_list(con) or is_map(con) do
-      apply_qualifier(con, qual, &eval_expr(subject, qual, &1, opts))
+      with true <- Enum.any?(con) do
+        apply_qualifier(con, qual, &eval_expr(subject, qual, &1, opts))
+      end
     else
       eval_expr(subject, qual, con, opts)
     end
@@ -142,11 +142,11 @@ defmodule Matchbox do
       Keyword.keyword?(subject) ->
         case Keyword.get(subject, key) do
           nil -> false
-          entry -> satisfies?(entry, qual, val, opts)
+          entry -> pass_condition?(entry, qual, val, opts)
         end
 
       true ->
-        check_condition(subject, qual, val, opts)
+        validate_conditions(subject, qual, val, opts)
     end
   end
 
@@ -164,7 +164,7 @@ defmodule Matchbox do
       true ->
         case Map.get(subject, key) do
           nil -> false
-          entry -> satisfies?(entry, qual, val, opts)
+          entry -> pass_condition?(entry, qual, val, opts)
         end
     end
   end
