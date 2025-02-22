@@ -2,242 +2,204 @@ defmodule Matchbox.CommonComparisonTest do
   use ExUnit.Case, async: true
   doctest Matchbox.CommonComparison
 
+  alias Matchbox.CommonComparison
+
+  @operators [
+    :is_atom,
+    :is_binary,
+    :is_boolean,
+    :is_float,
+    :is_function,
+    :is_integer,
+    :is_list,
+    :is_map,
+    :is_map_key,
+    :is_nil,
+    :is_number,
+    :is_pid,
+    :is_port,
+    :is_reference,
+    :is_struct,
+    :is_tuple,
+    :===,
+    :!==,
+    :>,
+    :<,
+    :>=,
+    :<=,
+    :=~,
+    :any,
+    :in
+  ]
+
   describe "operators/0" do
     test "returns expected operators" do
-      assert [
-               :is_atom,
-               :is_binary,
-               :is_boolean,
-               :is_float,
-               :is_function,
-               :is_integer,
-               :is_list,
-               :is_map,
-               :is_map_key,
-               :is_nil,
-               :is_number,
-               :is_pid,
-               :is_port,
-               :is_reference,
-               :is_struct,
-               :is_tuple,
-               :===,
-               :!==,
-               :>,
-               :<,
-               :>=,
-               :<=,
-               :=~,
-               :any,
-               :in
-             ] = Matchbox.CommonComparison.operators()
+      assert @operators = CommonComparison.operators()
     end
   end
 
-  describe "operator?" do
-    test "returns false if operator not recognized" do
-      refute Matchbox.CommonComparison.operator?(:non_existing)
+  describe "operator?/1" do
+    test "returns true for a supported operator" do
+      for operator <- @operators do
+        assert CommonComparison.operator?(operator)
+      end
     end
 
-    test "check with  operator is :is_atom" do
-      assert Matchbox.CommonComparison.operator?(:is_atom)
-    end
-
-    test "check with  operator is :is_binary" do
-      assert Matchbox.CommonComparison.operator?(:is_binary)
-    end
-
-    test "check with  operator is :is_boolean" do
-      assert Matchbox.CommonComparison.operator?(:is_boolean)
-    end
-
-    test "check with  operator is :is_float" do
-      assert Matchbox.CommonComparison.operator?(:is_float)
-    end
-
-    test "check with  operator is :is_function" do
-      assert Matchbox.CommonComparison.operator?(:is_function)
-    end
-
-    test "check with  operator is :is_integer" do
-      assert Matchbox.CommonComparison.operator?(:is_integer)
-    end
-
-    test "check with  operator is :is_list" do
-      assert Matchbox.CommonComparison.operator?(:is_list)
-    end
-
-    test "check with  operator is :is_map" do
-      assert Matchbox.CommonComparison.operator?(:is_map)
-    end
-
-    test "check with  operator is :is_nil" do
-      assert Matchbox.CommonComparison.operator?(:is_nil)
-    end
-
-    test "check with  operator is :is_number" do
-      assert Matchbox.CommonComparison.operator?(:is_number)
-    end
-
-    test "check with  operator is :is_pid" do
-      assert Matchbox.CommonComparison.operator?(:is_pid)
-    end
-
-    test "check with  operator is :is_port" do
-      assert Matchbox.CommonComparison.operator?(:is_port)
-    end
-
-    test "check with  operator is :is_reference" do
-      assert Matchbox.CommonComparison.operator?(:is_reference)
-    end
-
-    test "check with  operator is :is_struct" do
-      assert Matchbox.CommonComparison.operator?(:is_struct)
-    end
-
-    test "check with  operator is :is_tuple" do
-      assert Matchbox.CommonComparison.operator?(:is_tuple)
-    end
-
-    test "check with  operator is :===" do
-      assert Matchbox.CommonComparison.operator?(:===)
-    end
-
-    test "check with  operator is :!==" do
-      assert Matchbox.CommonComparison.operator?(:!==)
-    end
-
-    test "check with  operator is :<" do
-      assert Matchbox.CommonComparison.operator?(:<)
-    end
-
-    test "check with  operator is :>" do
-      assert Matchbox.CommonComparison.operator?(:>)
-    end
-
-    test "check with  operator is :<=" do
-      assert Matchbox.CommonComparison.operator?(:<=)
-    end
-
-    test "check with  operator is :>=" do
-      assert Matchbox.CommonComparison.operator?(:>=)
-    end
-
-    test "check with  operator is :=~" do
-      assert Matchbox.CommonComparison.operator?(:=~)
-    end
-
-    test "check with  operator is :any" do
-      assert Matchbox.CommonComparison.operator?(:any)
-    end
-
-    test "check with  operator is :in" do
-      assert Matchbox.CommonComparison.operator?(:in)
+    test "returns false for an unsupported operator" do
+      refute CommonComparison.operator?(:non_existing)
     end
   end
 
   describe "validate?" do
-    test "check with operator :is_atom" do
-      assert Matchbox.CommonComparison.validate?(:matchbox, :is_atom)
-    end
+    test "returns true for valid type checks" do
+      assert CommonComparison.validate?(:matchbox, :is_atom)
 
-    test "check with operator :is_binary" do
-      assert Matchbox.CommonComparison.validate?("matchbox", :is_binary)
-    end
+      assert CommonComparison.validate?("matchbox", :is_binary)
 
-    test "check with operator :is_boolean" do
-      assert Matchbox.CommonComparison.validate?(false, :is_boolean)
-    end
+      assert CommonComparison.validate?(false, :is_boolean)
 
-    test "check with operator :is_float" do
-      assert Matchbox.CommonComparison.validate?(1.0, :is_float)
-    end
+      assert CommonComparison.validate?(1.0, :is_float)
 
-    test "check with operator :is_function" do
-      assert Matchbox.CommonComparison.validate?(fn -> :ok end, :is_function)
+      assert CommonComparison.validate?(fn -> :ok end, :is_function)
 
-      assert Matchbox.CommonComparison.validate?(fn _ -> :ok end, {:is_function, 1})
-    end
+      assert CommonComparison.validate?(fn _ -> :ok end, {:is_function, 1})
 
-    test "check with operator :is_integer" do
-      assert Matchbox.CommonComparison.validate?(1, :is_integer)
-    end
+      assert CommonComparison.validate?(1, :is_integer)
 
-    test "check with operator :is_list" do
-      assert Matchbox.CommonComparison.validate?([], :is_list)
-    end
+      assert CommonComparison.validate?([], :is_list)
 
-    test "check with operator :is_map" do
-      assert Matchbox.CommonComparison.validate?(%{}, :is_map)
-    end
+      assert CommonComparison.validate?(%{}, :is_map)
 
-    test "check with operator :is_map_key" do
-      assert Matchbox.CommonComparison.validate?(%{body: "hello"}, {:is_map_key, :body})
-    end
+      assert CommonComparison.validate?(%{body: "hello"}, {:is_map_key, :body})
 
-    test "check with operator :is_nil" do
-      assert Matchbox.CommonComparison.validate?(nil, :is_nil)
-    end
+      assert CommonComparison.validate?(nil, :is_nil)
 
-    test "check with operator :is_number" do
-      assert Matchbox.CommonComparison.validate?(12.34, :is_number)
-    end
+      assert CommonComparison.validate?(12.34, :is_number)
 
-    test "check with operator :is_pid" do
-      assert Matchbox.CommonComparison.validate?(IEx.Helpers.pid("0.0.0"), :is_pid)
-    end
+      assert CommonComparison.validate?(IEx.Helpers.pid("0.0.0"), :is_pid)
 
-    test "check with operator :is_reference" do
-      assert Matchbox.CommonComparison.validate?(Kernel.make_ref(), :is_reference)
-    end
+      assert CommonComparison.validate?(Port.open({:spawn, "cat"}, [:binary]), :is_port)
 
-    test "check with operator :is_struct" do
-      assert Matchbox.CommonComparison.validate?(%Matchbox.Support.ExampleStruct{}, :is_struct)
+      assert CommonComparison.validate?(Kernel.make_ref(), :is_reference)
 
-      assert Matchbox.CommonComparison.validate?(
+      assert CommonComparison.validate?(%Matchbox.Support.ExampleStruct{}, :is_struct)
+
+      assert CommonComparison.validate?(
                %Matchbox.Support.ExampleStruct{},
                {:is_struct, Matchbox.Support.ExampleStruct}
              )
+
+      assert CommonComparison.validate?({1, 2, 3}, :is_tuple)
     end
 
-    test "check with operator :is_tuple" do
-      assert Matchbox.CommonComparison.validate?({1, 2, 3}, :is_tuple)
+    test "returns true for valid comparisons" do
+      assert CommonComparison.validate?(1, {:===, 1})
+      assert CommonComparison.validate?(1, {:!==, 2})
+      assert CommonComparison.validate?(1, {:>, 0})
+      assert CommonComparison.validate?(1, {:<, 2})
+      assert CommonComparison.validate?(1, {:>=, 1})
+      assert CommonComparison.validate?(1, {:<=, 1})
+      assert CommonComparison.validate?("example", {:=~, ~r|example|})
+      assert CommonComparison.validate?({1, 2, 3}, :any)
+      assert CommonComparison.validate?(1, {:in, [1, 2, 3]})
     end
 
-    test "check with operator :===" do
-      assert Matchbox.CommonComparison.validate?(1, {:===, 1})
+    test "supports datetime comparisons" do
+      assert CommonComparison.validate?(
+               ~U[2025-01-01 00:00:00.000000Z],
+               {:===, ~U[2025-01-01 00:00:00.000000Z]}
+             )
+
+      assert CommonComparison.validate?(
+               ~U[2025-01-01 00:00:00.000000Z],
+               {:!==, ~U[2025-01-02 00:00:00.000000Z]}
+             )
+
+      assert CommonComparison.validate?(
+               ~U[2025-01-02 00:00:00.000000Z],
+               {:>, ~U[2025-01-01 00:00:00.000000Z]}
+             )
+
+      assert CommonComparison.validate?(
+               ~U[2025-01-01 00:00:00.000000Z],
+               {:<, ~U[2025-01-02 00:00:00.000000Z]}
+             )
+
+      assert CommonComparison.validate?(
+               ~U[2025-01-01 00:00:00.000000Z],
+               {:>=, ~U[2025-01-01 00:00:00.000000Z]}
+             )
+
+      assert CommonComparison.validate?(
+               ~U[2025-01-02 00:00:00.000000Z],
+               {:>=, ~U[2025-01-01 00:00:00.000000Z]}
+             )
+
+      assert CommonComparison.validate?(
+               ~U[2025-01-01 00:00:00.000000Z],
+               {:<=, ~U[2025-01-01 00:00:00.000000Z]}
+             )
+
+      assert CommonComparison.validate?(
+               ~U[2025-01-01 00:00:00.000000Z],
+               {:<=, ~U[2025-01-02 00:00:00.000000Z]}
+             )
     end
 
-    test "check with operator :!==" do
-      assert Matchbox.CommonComparison.validate?(1, {:!==, 2})
+    test "supports naive datetime comparisons" do
+      assert CommonComparison.validate?(
+               ~N[2025-01-01 00:00:00.000000],
+               {:===, ~N[2025-01-01 00:00:00.000000]}
+             )
+
+      assert CommonComparison.validate?(
+               ~N[2025-01-01 00:00:00.000000],
+               {:!==, ~N[2025-01-02 00:00:00.000000]}
+             )
+
+      assert CommonComparison.validate?(
+               ~N[2025-01-02 00:00:00.000000],
+               {:>, ~N[2025-01-01 00:00:00.000000]}
+             )
+
+      assert CommonComparison.validate?(
+               ~N[2025-01-01 00:00:00.000000],
+               {:<, ~N[2025-01-02 00:00:00.000000]}
+             )
+
+      assert CommonComparison.validate?(
+               ~N[2025-01-01 00:00:00.000000],
+               {:>=, ~N[2025-01-01 00:00:00.000000]}
+             )
+
+      assert CommonComparison.validate?(
+               ~N[2025-01-02 00:00:00.000000],
+               {:>=, ~N[2025-01-01 00:00:00.000000]}
+             )
+
+      assert CommonComparison.validate?(
+               ~N[2025-01-01 00:00:00.000000],
+               {:<=, ~N[2025-01-01 00:00:00.000000]}
+             )
+
+      assert CommonComparison.validate?(
+               ~N[2025-01-01 00:00:00.000000],
+               {:<=, ~N[2025-01-02 00:00:00.000000]}
+             )
     end
 
-    test "check with operator :>" do
-      assert Matchbox.CommonComparison.validate?(1, {:>, 0})
-    end
+    test "supports decimal comparisons" do
+      assert CommonComparison.validate?(Decimal.new("1.0"), {:===, Decimal.new("1.0")})
+      assert CommonComparison.validate?(Decimal.new("1.0"), {:!==, Decimal.new("2.0")})
 
-    test "check with operator :<" do
-      assert Matchbox.CommonComparison.validate?(1, {:<, 2})
-    end
+      assert CommonComparison.validate?(Decimal.new("2.0"), {:>, Decimal.new("1.0")})
+      assert CommonComparison.validate?(Decimal.new("1.0"), {:<, Decimal.new("2.0")})
 
-    test "check with operator :>=" do
-      assert Matchbox.CommonComparison.validate?(1, {:>=, 1})
-    end
+      assert CommonComparison.validate?(Decimal.new("1.0"), {:>=, Decimal.new("1.0")})
+      assert CommonComparison.validate?(Decimal.new("2.0"), {:>=, Decimal.new("1.0")})
 
-    test "check with operator :<=" do
-      assert Matchbox.CommonComparison.validate?(1, {:<=, 1})
-    end
-
-    test "check with operator :=~" do
-      assert Matchbox.CommonComparison.validate?("example", {:=~, ~r|example|})
-    end
-
-    test "check with operator :any" do
-      assert Matchbox.CommonComparison.validate?({1, 2, 3}, :any)
-    end
-
-    test "check with operator :in" do
-      assert Matchbox.CommonComparison.validate?(1, {:in, [1, 2, 3]})
+      assert CommonComparison.validate?(Decimal.new("1.0"), {:<=, Decimal.new("1.0")})
+      assert CommonComparison.validate?(Decimal.new("1.0"), {:<=, Decimal.new("2.0")})
     end
   end
 end

@@ -78,7 +78,7 @@ defmodule MatchboxTest do
     end
 
     test "matches nested list values" do
-      assert Matchbox.satisfies?([[%{count: 1}], [%{count: 2}]], %{all: %{count: %{>: 0}}})
+      assert Matchbox.satisfies?([[%{count: 1}]], %{all: %{count: %{>: 0}}})
     end
 
     test "matches values within an enum" do

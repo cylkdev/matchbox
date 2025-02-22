@@ -89,7 +89,6 @@ Matchbox.satisfies?(data, conditions)
 
 This approach **keeps logic clear** and allows for easy modifications.
 
----
 
 ### Data Transformation
 
@@ -113,7 +112,6 @@ Matchbox.transform(data, conditions, fn d -> %{d | status: "active"} end)
 
 If the conditions do not match, the data remains unchanged.
 
----
 
 ### Custom Comparison Engine
 
@@ -152,7 +150,6 @@ config :matchbox, :comparison_engine, MyApp.CustomComparisonEngine
 
 For more details on built-in comparisons, see `Matchbox.CommonComparison`.
 
----
 
 ## Documentation
 

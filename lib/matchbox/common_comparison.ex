@@ -82,36 +82,9 @@ defmodule Matchbox.CommonComparison do
   @doc """
   Returns a list of all supported operators.
 
-  #### Examples
+  ### Examples
 
       iex> Matchbox.CommonComparison.operators()
-      [
-        :is_atom,
-        :is_binary,
-        :is_boolean,
-        :is_float,
-        :is_function,
-        :is_integer,
-        :is_list,
-        :is_map,
-        :is_map_key,
-        :is_nil,
-        :is_number,
-        :is_pid,
-        :is_port,
-        :is_reference,
-        :is_struct,
-        :is_tuple,
-        :===,
-        :!==,
-        :>,
-        :<,
-        :>=,
-        :<=,
-        :=~,
-        :any,
-        :in
-      ]
   """
   @spec operators() :: list(operator())
   def operators, do: @operators
@@ -120,7 +93,7 @@ defmodule Matchbox.CommonComparison do
   @doc """
   Checks if the given operator is supported.
 
-  #### Examples
+  ### Examples
 
       iex> Matchbox.CommonComparison.operator?(:is_atom)
       true
