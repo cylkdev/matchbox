@@ -91,97 +91,135 @@ defmodule Matchbox do
           opts :: keyword()
         ) :: true | false
   def satisfies?(subject, conditions, opts \\ []) do
+    IO.inspect(binding(), label: "1")
+
     with true <- Enum.any?(conditions) do
       Enum.all?(conditions, fn
-        {qual, con} when qual in [:all, :any] -> validate_conditions(subject, qual, con, opts)
-        term -> raise "Expected qualifier to be `:all` or `:any`, got: #{inspect(term)}"
+        {qual, expr} ->
+          if qual in [:all, :any] do
+            evaluate_conditions(subject, qual, expr, opts)
+          else
+            raise ArgumentError,
+                  "Expected qualifier to be ':all' or ':any', got: #{inspect(qual)}"
+          end
+
+        term ->
+          raise ArgumentError, """
+          Expected conditions to be an enum with the keys ':all' or ':any'.
+
+          For example:
+
+            - %{all: %{count: 0}}
+
+            - %{any: %{count: 0}}
+
+          got:
+          #{inspect(term)}
+          """
       end)
     end
   end
 
-  defp validate_conditions(subject, qual, con, opts) do
-    cond do
-      is_tuple(subject) ->
+  defp evaluate_conditions(subject, qual, expr, opts) when is_tuple(subject) do
+    IO.inspect(binding(), label: "2")
+
+    if is_tuple(expr) do
+      # passing the matching type is treated as an apples-to-apples comparison
+      subject = Tuple.to_list(subject)
+      expr = Tuple.to_list(expr)
+
+      with true <- Enum.any?(expr),
+           true <- length(subject) === length(expr) do
         subject
-        |> Tuple.to_list()
-        |> validate_conditions(qual, con, opts)
-
-      is_list(subject) and Keyword.keyword?(subject) ->
-        pass_condition?(subject, qual, con, opts)
-
-      is_list(subject) ->
-        with true <- Enum.any?(subject) do
-          subject
-          |> Enum.map(fn term -> pass_condition?(term, qual, con, opts) end)
-          |> apply_qualifier(qual, &(&1 === true))
-        end
-
-      true ->
-        pass_condition?(subject, qual, con, opts)
-    end
-  end
-
-  defp pass_condition?(subject, qual, con, opts) do
-    if is_list(con) or is_map(con) do
-      with true <- Enum.any?(con) do
-        apply_qualifier(con, qual, &eval_expr(subject, qual, &1, opts))
+        |> Stream.with_index()
+        |> enum_all_or_any(qual, fn {subject, index} ->
+          eval_expr(subject, qual, get_in(expr, [Access.at!(index)]), opts)
+        end)
       end
     else
-      eval_expr(subject, qual, con, opts)
+      subject
+      |> Tuple.to_list()
+      |> Enum.map(&compare_to_expr(&1, qual, expr, opts))
+      |> enum_all_or_any(qual, &(&1 === true))
     end
   end
 
-  defp apply_qualifier(subject, :any, fun), do: Enum.any?(subject, fun)
-  defp apply_qualifier(subject, :all, fun), do: Enum.all?(subject, fun)
+  defp evaluate_conditions(subject, qual, expr, opts) when is_list(subject) do
+    IO.inspect(binding(), label: "3")
 
-  defp eval_expr(subject, qual, {key, val}, opts) when is_list(subject) do
     cond do
-      ComparisonEngine.operator?(key, opts) ->
-        ComparisonEngine.validate?(subject, {key, val}, opts)
+      is_list(expr) and not Keyword.keyword?(expr) ->
+        # passing the matching type is treated as an apples-to-apples comparison
+        with true <- Enum.any?(expr),
+             true <- length(subject) === length(expr) do
+          subject
+          |> Stream.with_index()
+          |> enum_all_or_any(qual, fn {subject, index} ->
+            eval_expr(subject, qual, get_in(expr, [Access.at!(index)]), opts)
+          end)
+        end
 
       Keyword.keyword?(subject) ->
-        case Keyword.get(subject, key) do
-          nil -> false
-          entry -> pass_condition?(entry, qual, val, opts)
-        end
+        compare_to_expr(subject, qual, expr, opts)
 
       true ->
-        validate_conditions(subject, qual, val, opts)
+        subject
+        |> Enum.map(&compare_to_expr(&1, qual, expr, opts))
+        |> enum_all_or_any(qual, &(&1 === true))
     end
   end
 
-  defp eval_expr(subject, qual, {key, val}, opts) when is_map(subject) do
+  defp evaluate_conditions(subject, qual, expr, opts) do
+    IO.inspect(binding(), label: "4")
+
+    compare_to_expr(subject, qual, expr, opts)
+  end
+
+  defp compare_to_expr(subject, qual, expr, opts) do
+    if is_list(expr) or is_map(expr) do
+      Enum.any?(expr) and enum_all_or_any(expr, qual, &eval_expr(subject, qual, &1, opts))
+    else
+      eval_expr(subject, qual, expr, opts)
+    end
+  end
+
+  defp eval_expr(subject, qual, {key, val} = expr, opts) do
+    IO.inspect(binding(), label: "evaluate-1")
+
     cond do
       ComparisonEngine.operator?(key, opts) ->
-        ComparisonEngine.validate?(subject, {key, val}, opts)
+        ComparisonEngine.validate?(subject, expr, opts)
 
-      ComparisonEngine.operator?(key, opts) ->
+      is_list(subject) and Keyword.keyword?(subject) ->
+        case Keyword.get(subject, key) do
+          nil -> false
+          entry -> compare_to_expr(entry, qual, val, opts)
+        end
+
+      is_list(subject) ->
+        enum_all_or_any(subject, qual, &eval_expr(&1, qual, expr, opts))
+
+      is_map(subject) ->
         case Map.get(subject, key) do
           nil -> false
-          entry -> ComparisonEngine.validate?(entry, val, opts)
+          entry -> compare_to_expr(entry, qual, val, opts)
         end
 
       true ->
-        case Map.get(subject, key) do
-          nil -> false
-          entry -> pass_condition?(entry, qual, val, opts)
-        end
-    end
-  end
-
-  defp eval_expr(subject, _qual, {key, val} = tuple, opts) do
-    if ComparisonEngine.operator?(key, opts) do
-      ComparisonEngine.validate?(subject, {key, val}, opts)
-    else
-      subject === tuple
+        subject === expr
     end
   end
 
   defp eval_expr(subject, _qual, val, opts) do
+    IO.inspect(binding(), label: "evaluate-2")
+
     if ComparisonEngine.operator?(val, opts) do
       ComparisonEngine.validate?(subject, val, opts)
     else
       subject === val
     end
   end
+
+  defp enum_all_or_any(subject, :all, fun), do: Enum.all?(subject, fun)
+  defp enum_all_or_any(subject, :any, fun), do: Enum.any?(subject, fun)
 end

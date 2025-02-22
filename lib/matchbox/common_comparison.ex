@@ -324,7 +324,4 @@ defmodule Matchbox.CommonComparison do
       is_struct(changeset.data, name)
     end
   end
-
-  # fallback
-  def validate?(_, _), do: false
 end
