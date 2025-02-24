@@ -3,7 +3,7 @@ defmodule Matchbox.ComparisonEngine do
   Defines the required API for adapters.
 
   A comparison engine is responsible for evaluating whether
-  a given value satisfies a specified condition using a set
+  a given value satisfies a specified expression using a set
   of defined operators. This allows Matchbox to support
   flexible and extensible data evaluations.
 
@@ -14,7 +14,7 @@ defmodule Matchbox.ComparisonEngine do
   implement the required callbacks.
 
   ```elixir
-  defmodule Matchbox.Support.ExampleEngine do
+  defmodule MyApp.CustomComparisonEngine do
     @behaviour Matchbox.ComparisonEngine
 
     @impl Matchbox.ComparisonEngine
@@ -25,12 +25,12 @@ defmodule Matchbox.ComparisonEngine do
     def operator?(_), do: false
 
     @impl Matchbox.ComparisonEngine
-    def validate?(left, {:===, right}), do: left === right
-    def validate?(_, _), do: false
+    def compare?(left, {:===, right}), do: left === right
+    def compare?(_, _), do: false
   end
   ```
 
-  The `validate?/2` function in this example checks whether
+  The `compare?/2` function in this example checks whether
   the provided value matches the expected value using the
   strict equality (`:===`) operator.
 
@@ -46,18 +46,14 @@ defmodule Matchbox.ComparisonEngine do
   You can specify a custom engine at runtime:
 
   ```elixir
-  Matchbox.satisfies?(
-    123,
-    %{all: :is_integer},
-    comparison_engine: Matchbox.Support.ExampleEngine
-  )
+  Matchbox.matches?(123, :is_integer, comparison_engine: MyApp.CustomComparisonEngine)
   ```
 
   Or configure it globally in `config/config.exs`:
 
   ```elixir
   # config/config.exs
-  config :matchbox, :comparison_engine, Matchbox.Support.ExampleEngine
+  config :matchbox, :comparison_engine, MyApp.CustomComparisonEngine
   ```
 
   ## Shared Options
@@ -98,12 +94,12 @@ defmodule Matchbox.ComparisonEngine do
   ### Examples
 
   ```elixir
-  iex> Matchbox.Support.ExampleEngine.validate?("example", {:===, "example"})
+  iex> Matchbox.Support.ExampleEngine.compare?("example", {:===, "example"})
   true
   ```
   """
   @doc group: "Comparison Engine API"
-  @callback validate?(left :: term(), condition :: term()) :: true | false
+  @callback compare?(left :: term(), expression :: term()) :: true | false
 
   @doc """
   Executes the callback function `operators/0`.
@@ -142,7 +138,7 @@ defmodule Matchbox.ComparisonEngine do
   end
 
   @doc """
-  Executes the callback function `validate?/2`.
+  Executes the callback function `compare?/2`.
 
   ### Options
 
@@ -150,13 +146,13 @@ defmodule Matchbox.ComparisonEngine do
 
   ## Examples
 
-      iex> Matchbox.ComparisonEngine.validate?(1, {:===, 1}, comparison_engine: Matchbox.Support.ExampleEngine)
+      iex> Matchbox.ComparisonEngine.compare?(1, {:===, 1}, comparison_engine: Matchbox.Support.ExampleEngine)
       true
   """
-  @spec validate?(left :: term(), condition :: term()) :: true | false
-  @spec validate?(left :: term(), condition :: term(), opts :: keyword()) :: true | false
-  def validate?(left, condition, opts \\ []) do
-    adapter(opts).validate?(left, condition)
+  @spec compare?(left :: term(), expression :: term()) :: true | false
+  @spec compare?(left :: term(), expression :: term(), opts :: keyword()) :: true | false
+  def compare?(subject, expr, opts \\ []) do
+    adapter(opts).compare?(subject, expr)
   end
 
   defp adapter(opts) do

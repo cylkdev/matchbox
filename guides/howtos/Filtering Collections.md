@@ -50,7 +50,7 @@ conditions = %{all: %{status: :active}}
 Now, we apply the filter:
 
 ```elixir
-Enum.filter(users, &Matchbox.satisfies?(&1, conditions))
+Enum.filter(users, &Matchbox.matches?(&1, conditions))
 ```
 
 which returns:
@@ -94,7 +94,7 @@ conditions = %{
 Applying this:
 
 ```elixir
-Enum.filter(users, &Matchbox.satisfies?(&1, conditions))
+Enum.filter(users, &Matchbox.matches?(&1, conditions))
 ```
 
 Now, the result is:

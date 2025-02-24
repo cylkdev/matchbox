@@ -1,40 +1,4 @@
 defmodule Matchbox.CommonComparison do
-  @guard_operators ~w(
-    is_atom
-    is_binary
-    is_boolean
-    is_float
-    is_function
-    is_integer
-    is_list
-    is_map
-    is_map_key
-    is_nil
-    is_number
-    is_pid
-    is_port
-    is_reference
-    is_struct
-    is_tuple
-  )a
-
-  @comparison_operators ~w(
-    ===
-    !==
-    >
-    <
-    >=
-    <=
-    =~
-  )a
-
-  @general_operators ~w(
-    any
-    in
-  )a
-
-  @operators @guard_operators ++ @comparison_operators ++ @general_operators
-
   @moduledoc """
   Implements the `Matchbox.ComparisonEngine` behaviour, providing a set of
   operators for evaluating conditions on terms.
@@ -74,9 +38,45 @@ defmodule Matchbox.CommonComparison do
           | :<=
           | :=~
 
-  @type general_operator :: :any | :in
+  @type general_operator :: :length
 
   @type operator :: guard_operator() | comparison_operator() | general_operator()
+
+  @guard_operators ~w(
+    is_atom
+    is_binary
+    is_boolean
+    is_float
+    is_function
+    is_integer
+    is_list
+    is_map
+    is_map_key
+    is_nil
+    is_number
+    is_pid
+    is_port
+    is_reference
+    is_struct
+    is_tuple
+  )a
+
+  @comparison_operators ~w(
+    ===
+    !==
+    >
+    <
+    >=
+    <=
+    =~
+  )a
+
+  @general_operators ~w(
+    length
+    in
+  )a
+
+  @operators @guard_operators ++ @comparison_operators ++ @general_operators
 
   @impl Matchbox.ComparisonEngine
   @doc """
@@ -110,7 +110,7 @@ defmodule Matchbox.CommonComparison do
 
   @impl Matchbox.ComparisonEngine
   @doc """
-  Evaluates whether `left` satisfies the given `condition`.
+  Evaluates whether `subject` satisfies the given `condition`.
 
   ## Supported Operators
 
@@ -149,127 +149,122 @@ defmodule Matchbox.CommonComparison do
 
   ### General Operators
 
-  Other operators for flexible matching:
-
-    - `:any` - Always returns true.
-
-    - `:in` - Checks membership in lists or ranges.
-
   ### Examples
 
-      iex> Matchbox.CommonComparison.validate?(1, {:===, 1})
+      iex> Matchbox.CommonComparison.compare?(1, {:===, 1})
       true
 
-      iex> Matchbox.CommonComparison.validate?(1, {:in, [1, 2, 3]})
+      iex> Matchbox.CommonComparison.compare?([1, 2, 3], {:in, 1})
       true
 
-      iex> Matchbox.CommonComparison.validate?("hello", {:=~, ~r/hello/})
+      iex> Matchbox.CommonComparison.compare?("hello", {:=~, ~r/hello/})
       true
   """
-  @spec validate?(left :: term(), condition :: atom() | {atom(), term()}) :: true | false
+  @spec compare?(subject :: term(), expression :: atom() | {atom(), term()}) :: true | false
 
   # Guard API
 
-  def validate?(term, :is_atom), do: is_atom(term)
-  def validate?(term, :is_binary), do: is_binary(term)
-  def validate?(term, :is_boolean), do: is_boolean(term)
-  def validate?(term, :is_float), do: is_float(term)
-  def validate?(term, :is_function), do: is_function(term)
-  def validate?(term, {:is_function, arity}), do: is_function(term, arity)
-  def validate?(term, :is_integer), do: is_integer(term)
-  def validate?(term, :is_list), do: is_list(term)
-  def validate?(term, :is_map), do: is_map(term)
-  def validate?(term, {:is_map_key, key}), do: is_map_key(term, key)
-  def validate?(term, :is_nil), do: is_nil(term)
-  def validate?(term, :is_number), do: is_number(term)
-  def validate?(term, :is_pid), do: is_pid(term)
-  def validate?(term, :is_port), do: is_port(term)
-  def validate?(term, :is_reference), do: is_reference(term)
-  def validate?(term, :is_struct), do: is_struct(term)
-  def validate?(term, {:is_struct, name}), do: is_struct(term, name)
-  def validate?(term, :is_tuple), do: is_tuple(term)
+  def compare?(term, :is_atom), do: is_atom(term)
+  def compare?(term, :is_binary), do: is_binary(term)
+  def compare?(term, :is_boolean), do: is_boolean(term)
+  def compare?(term, :is_float), do: is_float(term)
+  def compare?(term, :is_function), do: is_function(term)
+  def compare?(term, {:is_function, arity}), do: is_function(term, arity)
+  def compare?(term, :is_integer), do: is_integer(term)
+  def compare?(term, :is_list), do: is_list(term)
+  def compare?(term, :is_map), do: is_map(term)
+  def compare?(term, {:is_map_key, key}), do: is_map_key(term, key)
+  def compare?(term, :is_nil), do: is_nil(term)
+  def compare?(term, :is_number), do: is_number(term)
+  def compare?(term, :is_pid), do: is_pid(term)
+  def compare?(term, :is_port), do: is_port(term)
+  def compare?(term, :is_reference), do: is_reference(term)
+  def compare?(term, :is_struct), do: is_struct(term)
+  def compare?(term, {:is_struct, name}), do: is_struct(term, name)
+  def compare?(term, :is_tuple), do: is_tuple(term)
 
-  # DateTime API
+  # Comparison API
 
-  def validate?(left, {:===, right}) when is_struct(left, DateTime),
-    do: DateTime.compare(left, right) === :eq
+  def compare?(term, {:===, val}) when is_struct(term, DateTime),
+    do: DateTime.compare(term, val) === :eq
 
-  def validate?(left, {:!==, right}) when is_struct(left, DateTime),
-    do: DateTime.compare(left, right) !== :eq
+  def compare?(term, {:!==, val}) when is_struct(term, DateTime),
+    do: DateTime.compare(term, val) !== :eq
 
-  def validate?(left, {:>, right}) when is_struct(left, DateTime),
-    do: DateTime.compare(left, right) === :gt
+  def compare?(term, {:>, val}) when is_struct(term, DateTime),
+    do: DateTime.compare(term, val) === :gt
 
-  def validate?(left, {:<, right}) when is_struct(left, DateTime),
-    do: DateTime.compare(left, right) === :lt
+  def compare?(term, {:<, val}) when is_struct(term, DateTime),
+    do: DateTime.compare(term, val) === :lt
 
-  def validate?(left, {:>=, right}) when is_struct(left, DateTime),
-    do: DateTime.compare(left, right) in [:eq, :gt]
+  def compare?(term, {:>=, val}) when is_struct(term, DateTime),
+    do: DateTime.compare(term, val) in [:eq, :gt]
 
-  def validate?(left, {:<=, right}) when is_struct(left, DateTime),
-    do: DateTime.compare(left, right) in [:eq, :lt]
+  def compare?(term, {:<=, val}) when is_struct(term, DateTime),
+    do: DateTime.compare(term, val) in [:eq, :lt]
 
   # NaiveDateTime API
 
-  def validate?(left, {:===, right}) when is_struct(left, NaiveDateTime),
-    do: NaiveDateTime.compare(left, right) === :eq
+  def compare?(term, {:===, val}) when is_struct(term, NaiveDateTime),
+    do: NaiveDateTime.compare(term, val) === :eq
 
-  def validate?(left, {:!==, right}) when is_struct(left, NaiveDateTime),
-    do: NaiveDateTime.compare(left, right) !== :eq
+  def compare?(term, {:!==, val}) when is_struct(term, NaiveDateTime),
+    do: NaiveDateTime.compare(term, val) !== :eq
 
-  def validate?(left, {:>, right}) when is_struct(left, NaiveDateTime),
-    do: NaiveDateTime.compare(left, right) === :gt
+  def compare?(term, {:>, val}) when is_struct(term, NaiveDateTime),
+    do: NaiveDateTime.compare(term, val) === :gt
 
-  def validate?(left, {:<, right}) when is_struct(left, NaiveDateTime),
-    do: NaiveDateTime.compare(left, right) === :lt
+  def compare?(term, {:<, val}) when is_struct(term, NaiveDateTime),
+    do: NaiveDateTime.compare(term, val) === :lt
 
-  def validate?(left, {:>=, right}) when is_struct(left, NaiveDateTime),
-    do: NaiveDateTime.compare(left, right) in [:eq, :gt]
+  def compare?(term, {:>=, val}) when is_struct(term, NaiveDateTime),
+    do: NaiveDateTime.compare(term, val) in [:eq, :gt]
 
-  def validate?(left, {:<=, right}) when is_struct(left, NaiveDateTime),
-    do: NaiveDateTime.compare(left, right) in [:eq, :lt]
+  def compare?(term, {:<=, val}) when is_struct(term, NaiveDateTime),
+    do: NaiveDateTime.compare(term, val) in [:eq, :lt]
 
   # Decimal API
 
   if Code.ensure_loaded?(Decimal) do
-    def validate?(left, {:===, right}) when is_struct(left, Decimal),
-      do: Decimal.compare(left, right) === :eq
+    def compare?(term, {:===, val}) when is_struct(term, Decimal),
+      do: Decimal.compare(term, val) === :eq
 
-    def validate?(left, {:!==, right}) when is_struct(left, Decimal),
-      do: Decimal.compare(left, right) !== :eq
+    def compare?(term, {:!==, val}) when is_struct(term, Decimal),
+      do: Decimal.compare(term, val) !== :eq
 
-    def validate?(left, {:>, right}) when is_struct(left, Decimal),
-      do: Decimal.compare(left, right) === :gt
+    def compare?(term, {:>, val}) when is_struct(term, Decimal),
+      do: Decimal.compare(term, val) === :gt
 
-    def validate?(left, {:<, right}) when is_struct(left, Decimal),
-      do: Decimal.compare(left, right) === :lt
+    def compare?(term, {:<, val}) when is_struct(term, Decimal),
+      do: Decimal.compare(term, val) === :lt
 
-    def validate?(left, {:>=, right}) when is_struct(left, Decimal),
-      do: Decimal.compare(left, right) in [:eq, :gt]
+    def compare?(term, {:>=, val}) when is_struct(term, Decimal),
+      do: Decimal.compare(term, val) in [:eq, :gt]
 
-    def validate?(left, {:<=, right}) when is_struct(left, Decimal),
-      do: Decimal.compare(left, right) in [:eq, :lt]
+    def compare?(term, {:<=, val}) when is_struct(term, Decimal),
+      do: Decimal.compare(term, val) in [:eq, :lt]
   end
+
+  def compare?(term, {:===, val}), do: term === val
+  def compare?(term, {:!==, val}), do: term !== val
+  def compare?(term, {:>, val}), do: term > val
+  def compare?(term, {:<, val}), do: term < val
+  def compare?(term, {:>=, val}), do: term >= val
+  def compare?(term, {:<=, val}), do: term <= val
+  def compare?(term, {:=~, val}), do: term =~ val
 
   # General API
 
-  def validate?(left, {:===, right}), do: left === right
-  def validate?(left, {:!==, right}), do: left !== right
-  def validate?(left, {:>, right}), do: left > right
-  def validate?(left, {:<, right}), do: left < right
-  def validate?(left, {:>=, right}), do: left >= right
-  def validate?(left, {:<=, right}), do: left <= right
-  def validate?(left, {:=~, right}), do: left =~ right
+  def compare?(list, {:in, val}), do: Enum.member?(list, val)
 
-  def validate?(_left, :any), do: true
-  def validate?(left, {:in, enum}), do: Enum.member?(enum, left)
-
-  # Ecto API
-
-  if Code.ensure_loaded?(Ecto) do
-    def validate?(changeset, {:is_changeset_struct, name})
-        when is_struct(changeset, Ecto.Changeset) do
-      is_struct(changeset.data, name)
-    end
+  def compare?(tup, {:length, expr}) when is_tuple(tup) do
+    tup |> Tuple.to_list() |> compare?({:length, expr})
   end
+
+  def compare?(list, {:length, {:===, count}}), do: length(list) === count
+  def compare?(list, {:length, {:>, count}}), do: length(list) > count
+  def compare?(list, {:length, {:<, count}}), do: length(list) < count
+  def compare?(list, {:length, {:>=, count}}), do: length(list) >= count
+  def compare?(list, {:length, {:<=, count}}), do: length(list) <= count
+  def compare?(list, {:length, {:in, range}}), do: length(list) in range
 end

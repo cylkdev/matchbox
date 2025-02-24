@@ -49,6 +49,7 @@ A common approach might use a `case` statement:
 
 ```elixir
 data = %{
+  status: "inactive",
   user: %{
     age: 30,
     name: "Alice",
@@ -75,15 +76,13 @@ we expect** using a **map** or **keyword list**:
 
 ```elixir
 conditions = %{
-  all: %{
-    user: %{
-      age: 30,
-      name: "Alice"
-    }
+  user: %{
+    age: 30,
+    name: "Alice"
   }
 }
 
-Matchbox.satisfies?(data, conditions)
+Matchbox.matches?(data, conditions)
 # => true
 ```
 
@@ -104,7 +103,7 @@ updated_data = if data.status == "inactive", do: %{data | status: "active"}, els
 With Matchbox, we **separate what we're checking for from what we want to change**:
 
 ```elixir
-conditions = %{all: %{status: "inactive"}}
+conditions = %{status: "inactive"}
 
 Matchbox.transform(data, conditions, fn d -> %{d | status: "active"} end)
 # => %{status: "active", user: %{name: "Alice", age: 30}}
@@ -127,7 +126,7 @@ defmodule MyApp.CustomComparisonEngine do
   @behaviour Matchbox.ComparisonEngine
 
   @impl true
-  def validate?(left, {:===, right}) do
+  def compare?(left, {:===, right}) do
     # Define custom comparison logic
     left === right
   end
@@ -139,7 +138,7 @@ end
 You can set a custom comparison engine at runtime:
 
 ```elixir
-Matchbox.satisfies?(123, %{all: :is_integer}, comparison_engine: MyApp.CustomComparisonEngine)
+Matchbox.matches?(123, :is_integer, comparison_engine: MyApp.CustomComparisonEngine)
 ```
 
 Or via the configuration option:
