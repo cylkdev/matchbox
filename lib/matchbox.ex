@@ -17,39 +17,39 @@ defmodule Matchbox do
 
       # If the term matches, the transformation function is applied
       iex> Matchbox.transform("hello", {%{all?: %{===: "hello"}}, &String.upcase/1})
-      "HELLO"
+      {"HELLO", true}
 
       # If the term does not match, it remains unchanged
       iex> Matchbox.transform("world", {%{all?: %{===: "hello"}}, &String.upcase/1})
-      "world"
+      {"world", false}
   """
   @spec transform(
           subject :: term(),
           conditions ::
             {expr :: term(), fun :: function()} | list({expr :: term(), fun :: function()})
-        ) :: term()
+        ) :: {subject :: term(), passed? :: term()}
   @spec transform(
           subject :: term(),
           conditions ::
             {expr :: term(), fun :: function()} | list({expr :: term(), fun :: function()}),
           opts :: keyword()
-        ) :: term()
+        ) :: {subject :: term(), passed? :: term()}
   def transform(subject, conditions, opts \\ []) do
     conditions
     |> List.wrap()
-    |> Enum.reduce_while(subject, &reduce_transform(&2, &1, opts))
+    |> Enum.reduce_while(subject, &reduce_transform(&1, {&2, false}, opts))
   end
 
-  defp reduce_transform(subject, {expr, fun}, opts) do
+  defp reduce_transform({expr, fun}, {subject, passed?}, opts) do
     if matches?(subject, expr, opts) do
       subject = if is_function(fun, 1), do: fun.(subject), else: fun.()
 
       case Keyword.get(opts, :on_change, :halt) do
-        :cont -> {:cont, subject}
-        :halt -> {:halt, subject}
+        :cont -> {:cont, {subject, true}}
+        :halt -> {:halt, {subject, true}}
       end
     else
-      {:cont, subject}
+      {:cont, {subject, passed?}}
     end
   end
 

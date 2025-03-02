@@ -4,19 +4,19 @@ defmodule MatchboxTest do
 
   describe "transform: " do
     test "applies the transformation function when params is met" do
-      assert Matchbox.transform("hello", {"hello", &String.upcase/1}) === "HELLO"
+      assert {"HELLO", true} = Matchbox.transform("hello", {"hello", &String.upcase/1})
     end
 
     test "returns the original term when params does not match" do
-      assert Matchbox.transform("world", {"hello", &String.upcase/1}) === "world"
+      assert {"world", false} = Matchbox.transform("world", {"hello", &String.upcase/1})
     end
 
     test "applies the transformation function when it has arity 0" do
-      assert Matchbox.transform("hello", {"hello", fn -> "constant" end}) === "constant"
+      assert {"constant", true} = Matchbox.transform("hello", {"hello", fn -> "constant" end})
     end
 
     test "supports the :comparison_engine option" do
-      assert "HELLO" =
+      assert {"HELLO", true} =
                Matchbox.transform("hello", {"hello", &String.upcase/1},
                  comparison_engine: Matchbox.Support.ExampleEngine
                )
