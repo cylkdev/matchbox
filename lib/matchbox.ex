@@ -3,19 +3,31 @@ defmodule Matchbox do
 
   alias Matchbox.ComparisonEngine
 
-  @doc """
-  Transforms `term` if it meets the given expr.
+  @type subject :: term()
+  @type conditions :: map()
+  @type resolver :: function()
+  @type selector :: {conditions(), resolver()}
+  @type selectors :: selector() | list(selector())
+  @type opts :: keyword()
 
-  If `term` matches the specified expr, `fun` is applied;
-  otherwise, `term` is returned unchanged.
+  @doc """
+  For each `selector`, if `term` matches `conditions` the `fun` is
+  applied and the result is returned otherwise `term` is returned
+  unchanged.
 
   ### Options
 
-    * `comparison_engine` - Specifies the comparison engine module (default: `Matchbox.CommonComparison`).
+    * `comparison_engine` - Specifies the comparison engine module.
+      Defaults to `Matchbox.CommonComparison`.
+
+    * `:on_change` - Controls if one or all selector are
+      applied. When `:cont` all selector are applied.
+      When `:halt` only the first matching selector is
+      applied. Defaults to `:halt`.
 
   ### Examples
 
-      # If the term matches, the transformation function is applied
+      # If the term matches, the selector function is applied
       iex> Matchbox.transform("hello", {%{all?: %{===: "hello"}}, &String.upcase/1})
       {"HELLO", true}
 
@@ -24,24 +36,22 @@ defmodule Matchbox do
       {"world", false}
   """
   @spec transform(
-          subject :: term(),
-          conditions ::
-            {expr :: term(), fun :: function()} | list({expr :: term(), fun :: function()})
-        ) :: {subject :: term(), passed? :: term()}
+          subject :: subject(),
+          selectors :: selector() | selectors()
+        ) :: {subject :: subject(), matched? :: true | false}
   @spec transform(
-          subject :: term(),
-          conditions ::
-            {expr :: term(), fun :: function()} | list({expr :: term(), fun :: function()}),
-          opts :: keyword()
-        ) :: {subject :: term(), passed? :: term()}
-  def transform(subject, conditions, opts \\ []) do
-    conditions
+          subject :: subject(),
+          selectors :: selector() | selectors(),
+          opts :: opts()
+        ) :: {subject :: subject(), matched? :: true | false}
+  def transform(subject, selectors, opts \\ []) do
+    selectors
     |> List.wrap()
     |> Enum.reduce_while(subject, &reduce_transform(&1, {&2, false}, opts))
   end
 
-  defp reduce_transform({expr, fun}, {subject, passed?}, opts) do
-    if matches?(subject, expr, opts) do
+  defp reduce_transform({con, fun}, {subject, matched?}, opts) do
+    if matches?(subject, con, opts) do
       subject = if is_function(fun, 1), do: fun.(subject), else: fun.()
 
       case Keyword.get(opts, :on_change, :halt) do
@@ -49,12 +59,12 @@ defmodule Matchbox do
         :halt -> {:halt, {subject, true}}
       end
     else
-      {:cont, {subject, passed?}}
+      {:cont, {subject, matched?}}
     end
   end
 
   @doc """
-  Returns `true` if `term` matches expression, otherwise `false`.
+  Returns `true` if `term` matches `conditions`, otherwise `false`.
 
   ### Examples
 
@@ -70,65 +80,72 @@ defmodule Matchbox do
       iex> Matchbox.matches?([1, 2, 3], %{in: 1})
       true
   """
-  @spec matches?(subject :: term(), expr :: term()) :: true | false
-  @spec matches?(subject :: term(), expr :: term(), opts :: keyword()) :: true | false
-  def matches?(subject, expr, opts \\ []) do
-    if is_list(expr) or is_map(expr) do
-      Enum.any?(expr) and eval_expr(subject, expr, opts)
+  @spec matches?(
+          subject :: subject(),
+          conditions :: conditions()
+        ) :: true | false
+  @spec matches?(
+          subject :: subject(),
+          conditions :: conditions(),
+          opts :: opts()
+        ) :: true | false
+  def matches?(subject, con, opts \\ []) do
+    if is_list(con) or is_map(con) do
+      Enum.any?(con) and eval_con(subject, con, opts)
     else
-      eval_expr(subject, expr, opts)
+      eval_con(subject, con, opts)
     end
   end
 
-  defp eval_expr(subject, [expr | todo], opts) do
+  defp eval_con(subject, [con | todo], opts) do
     if Enum.any?(todo) do
-      eval_expr(subject, expr, opts) and eval_expr(subject, todo, opts)
+      eval_con(subject, con, opts) and eval_con(subject, todo, opts)
     else
-      eval_expr(subject, expr, opts)
+      eval_con(subject, con, opts)
     end
   end
 
-  defp eval_expr(_subject, op, _opts) when op in [:any, :*] do
+  defp eval_con(_subject, op, _opts) when op in [:any, :*] do
     true
   end
 
-  defp eval_expr(subject, {:all?, expr}, opts) do
-    Enum.any?(expr) and Enum.all?(expr, &eval_expr(subject, &1, opts))
+  defp eval_con(subject, {:all?, con}, opts) do
+    Enum.any?(con) and Enum.all?(con, &eval_con(subject, &1, opts))
   end
 
-  defp eval_expr(subject, {:any?, expr}, opts) do
-    Enum.any?(expr) and Enum.any?(expr, &eval_expr(subject, &1, opts))
+  defp eval_con(subject, {:any?, con}, opts) do
+    Enum.any?(con) and Enum.any?(con, &eval_con(subject, &1, opts))
   end
 
-  defp eval_expr(subject, {:not, expr}, opts) do
-    eval_expr(subject, expr, opts) === false
+  defp eval_con(subject, {:not, con}, opts) do
+    eval_con(subject, con, opts) === false
   end
 
-  defp eval_expr(subject, {key, expr} = kv, opts) when is_list(subject) do
+  defp eval_con(subject, {key, con} = kv, opts) when is_list(subject) do
     if ComparisonEngine.operator?(key) do
       ComparisonEngine.compare?(subject, kv, opts)
     else
       with true <- Keyword.has_key?(subject, key) do
         subject
         |> Keyword.get(key)
-        |> eval_expr(expr, opts)
+        |> eval_con(con, opts)
       end
     end
   end
 
-  defp eval_expr(subject, {key, expr} = kv, opts) when is_map(subject) do
+  defp eval_con(subject, {key, con} = kv, opts) when is_map(subject) do
     if ComparisonEngine.operator?(key) do
       ComparisonEngine.compare?(subject, kv, opts)
     else
       with true <- Map.has_key?(subject, key) do
         subject
         |> Map.get(key)
-        |> eval_expr(expr, opts)
+        |> eval_con(con, opts)
       end
     end
   end
 
-  defp eval_expr(subject, {key, _expr} = kv, opts) do
+  defp eval_con(subject, {key, _con} = kv, opts) do
     if ComparisonEngine.operator?(key, opts) do
       ComparisonEngine.compare?(subject, kv, opts)
     else
@@ -136,15 +153,15 @@ defmodule Matchbox do
     end
   end
 
-  defp eval_expr(subject, expr, opts) when is_map(expr) do
-    eval_expr(subject, Map.to_list(expr), opts)
+  defp eval_con(subject, con, opts) when is_map(con) do
+    eval_con(subject, Map.to_list(con), opts)
   end
 
-  defp eval_expr(subject, expr, opts) do
-    if ComparisonEngine.operator?(expr, opts) do
-      ComparisonEngine.compare?(subject, expr, opts)
+  defp eval_con(subject, val, opts) do
+    if ComparisonEngine.operator?(val, opts) do
+      ComparisonEngine.compare?(subject, val, opts)
     else
-      subject === expr
+      subject === val
     end
   end
 end
